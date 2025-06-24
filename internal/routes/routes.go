@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"WaSolCRM/config"
 	"WaSolCRM/internal/auth"
+	"WaSolCRM/internal/database"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -17,6 +19,47 @@ func Router() {
 		c.HTML(http.StatusOK, "login.html", gin.H{})
 	})
 
+	r.GET("/register", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "register.html", gin.H{})
+	})
+
+	r.POST("/register", func(c *gin.Context) {
+		var req struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+			IsAdmin  bool   `json:"isAdmin"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+			return
+		}
+		loadConfig := config.LoadConfig()
+		db, err := database.OpenConn(loadConfig.DbUrl)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "DB connection failed"})
+			return
+		}
+		ok, err := auth.CreateUser(db, auth.LoginT{Login: req.Username, Password: req.Password}, req.IsAdmin)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User not created"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"success": "User registered!"})
+	})
+
+	r.POST("/login", func(c *gin.Context) {
+		var req auth.LoginT
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
+			return
+		}
+		auth.Login(c, &req)
+	})
+
 	r.Use(auth.Middleware())
 
 	r.GET("/", func(c *gin.Context) {
@@ -25,5 +68,8 @@ func Router() {
 		})
 	})
 
-	r.Run(":8080")
+	err := r.Run(":8080")
+	if err != nil {
+		return
+	}
 }

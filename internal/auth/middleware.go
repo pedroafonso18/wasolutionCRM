@@ -11,12 +11,18 @@ import (
 func Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-			c.Redirect(http.StatusFound, "/login")
-			c.Abort()
-			return
+		var tokenString string
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+		} else {
+			cookie, err := c.Cookie("token")
+			if err != nil || cookie == "" {
+				c.Redirect(http.StatusFound, "/login")
+				c.Abort()
+				return
+			}
+			tokenString = cookie
 		}
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		config := config2.LoadConfig()
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return []byte(config.JWT), nil

@@ -10,11 +10,6 @@ import (
 )
 
 func Login(c *gin.Context, login *LoginT) User {
-	if err := c.ShouldBindJSON(&login); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
-		return User{IsAdmin: false, IsLogged: false}
-	}
-
 	config := config2.LoadConfig()
 
 	conn, err := database.OpenConn(config.DbUrl)
@@ -35,28 +30,35 @@ func Login(c *gin.Context, login *LoginT) User {
 		return User{IsAdmin: false, IsLogged: false}
 	}
 
+	isAdmin := false
+	validation, err := VerifyIsAdmin(conn, *login)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Couldn't verify if user is_admin"})
+		return User{IsAdmin: false, IsLogged: true}
+	}
+	if validation {
+		isAdmin = true
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
 		"username": login.Login,
+		"isAdmin":  isAdmin,
 		"exp":      time.Now().Add(time.Hour * 72).Unix(),
 	})
 
-	tokenString, err := token.SignedString(config.JWT)
+	tokenString, err := token.SignedString([]byte(config.JWT))
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": "JWT Access not granted."})
 		return User{IsAdmin: false, IsLogged: false}
 	}
 
-	validation, err := VerifyIsAdmin(conn, *login)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Couldn't verify if user is_admin"})
-		return User{IsAdmin: false, IsLogged: true, JWT: Token(tokenString)}
-	}
+	c.SetCookie("token", tokenString, 60*60*72, "/", "", false, true)
 
-	if validation {
-		c.JSON(http.StatusOK, gin.H{"success": "Successfully logged in as admin!"})
+	if isAdmin {
+		c.JSON(http.StatusOK, gin.H{"success": "Successfully logged in as admin!", "redirect": "/"})
 		return User{IsAdmin: true, IsLogged: true, JWT: Token(tokenString)}
 	} else {
-		c.JSON(http.StatusOK, gin.H{"success": "Successfully logged in!"})
+		c.JSON(http.StatusOK, gin.H{"success": "Successfully logged in!", "redirect": "/"})
 		return User{IsAdmin: false, IsLogged: true, JWT: Token(tokenString)}
 	}
 }

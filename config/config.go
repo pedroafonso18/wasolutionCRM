@@ -18,7 +18,7 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		DbUrl: os.Getenv("DB_HOST"),
+		DbUrl: os.Getenv("DB_URL"),
 		JWT:   os.Getenv("JWT_KEY"),
 	}
 }
