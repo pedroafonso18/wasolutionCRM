@@ -37,3 +37,10 @@ type ApiResponse[T any] struct {
 	Data    *T     `json:"data,omitempty"`
 	Error   string `json:"error,omitempty"`
 }
+
+type Message struct {
+	InstanceId string
+	Number     string
+	Body       string
+	Type       string
+}
