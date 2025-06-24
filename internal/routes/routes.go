@@ -4,16 +4,24 @@ import (
 	"WaSolCRM/config"
 	"WaSolCRM/internal/auth"
 	"WaSolCRM/internal/database"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func Router() {
 	r := gin.Default()
 
 	r.LoadHTMLGlob("web/templates/*")
-
+	r.Static("/style", "./web/style")
+	r.Static("/script", "./web/script")
 	r.Static("/static", "./static")
+
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"Title": "WaSolCRM - Gerenciamento Inteligente do WhatsApp",
+		})
+	})
 
 	r.GET("/login", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.html", gin.H{})
@@ -60,13 +68,13 @@ func Router() {
 		auth.Login(c, &req)
 	})
 
+	// Protected routes (require authentication)
 	r.Use(auth.Middleware())
 
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"Title": "Hello Gin",
-		})
-	})
+	// Add protected routes here in the future
+	// r.GET("/dashboard", func(c *gin.Context) {
+	//     c.HTML(http.StatusOK, "dashboard.html", gin.H{})
+	// })
 
 	err := r.Run(":8080")
 	if err != nil {

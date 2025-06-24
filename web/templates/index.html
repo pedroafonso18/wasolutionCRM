@@ -1,10 +1,243 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <title>{{ .Title }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaSolCRM - Gerenciamento Inteligente do WhatsApp</title>
+    <link rel="stylesheet" href="/style/landing.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-<h1>{{ .Title }}</h1>
-<p>Welcome to Gin rendering!</p>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fab fa-whatsapp"></i>
+                <span>WaSolCRM</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#features" class="nav-link">Recursos</a>
+                <a href="#about" class="nav-link">Sobre</a>
+                <a href="#contact" class="nav-link">Contato</a>
+                <a href="/login" class="nav-btn">Entrar</a>
+            </div>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Revolucione seu <span class="highlight">WhatsApp Business</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Gerencie múltiplas instâncias, automatize mensagens e transforme sua comunicação 
+                    com clientes em uma experiência profissional e eficiente.
+                </p>
+                <div class="hero-buttons">
+                    <a href="/login" class="btn btn-primary">
+                        <i class="fas fa-rocket"></i>
+                        Começar Agora
+                    </a>
+                    <a href="#features" class="btn btn-secondary">
+                        <i class="fas fa-play"></i>
+                        Ver Recursos
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="chat-bubble chat-1">
+                            <i class="fab fa-whatsapp"></i>
+                            <span>Olá! Como posso ajudar?</span>
+                        </div>
+                        <div class="chat-bubble chat-2">
+                            <span>Preciso de informações sobre o produto</span>
+                        </div>
+                        <div class="chat-bubble chat-1">
+                            <i class="fab fa-whatsapp"></i>
+                            <span>Claro! Aqui estão os detalhes...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-bg">
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="floating-shape shape-3"></div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Recursos Principais</h2>
+                <p>Tudo que você precisa para gerenciar seu WhatsApp Business</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Múltiplas Instâncias</h3>
+                    <p>Gerencie várias contas do WhatsApp simultaneamente com facilidade e segurança.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>Automação Inteligente</h3>
+                    <p>Configure webhooks e automatize respostas para melhorar a eficiência do atendimento.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Análise de Dados</h3>
+                    <p>Acompanhe métricas importantes e otimize sua estratégia de comunicação.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Segurança Total</h3>
+                    <p>Autenticação JWT e proteção de dados garantem a segurança das suas informações.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3>Interface Responsiva</h3>
+                    <p>Acesse de qualquer dispositivo com nossa interface adaptável e intuitiva.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3>API Integrada</h3>
+                    <p>Integre facilmente com suas aplicações existentes através de APIs robustas.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>Sobre o WaSolCRM</h2>
+                    <p>
+                        O WaSolCRM é uma solução completa desenvolvida em Go para gerenciamento profissional 
+                        do WhatsApp Business. Inspirado no projeto wasolution, oferecemos uma plataforma 
+                        robusta e escalável para empresas que desejam otimizar sua comunicação via WhatsApp.
+                    </p>
+                    <p>
+                        Nossa plataforma combina simplicidade de uso com recursos avançados, permitindo 
+                        que você foque no que realmente importa: seus clientes.
+                    </p>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Go</span>
+                        <span class="tech-tag">PostgreSQL</span>
+                        <span class="tech-tag">JWT</span>
+                        <span class="tech-tag">Gin</span>
+                    </div>
+                </div>
+                <div class="about-image">
+                    <div class="code-window">
+                        <div class="window-header">
+                            <div class="window-buttons">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <span class="window-title">WaSolCRM.go</span>
+                        </div>
+                        <div class="code-content">
+                            <pre><code>func main() {
+    // Inicializar CRM
+    crm := NewWaSolCRM()
+    
+    // Configurar instâncias
+    crm.SetupInstances()
+    
+    // Iniciar servidor
+    crm.Start()
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Pronto para Transformar seu WhatsApp?</h2>
+                <p>Junte-se a centenas de empresas que já otimizaram sua comunicação</p>
+                <a href="/login" class="btn btn-primary btn-large">
+                    <i class="fas fa-arrow-right"></i>
+                    Começar Gratuitamente
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>WaSolCRM</span>
+                    </div>
+                    <p>Revolucionando a gestão do WhatsApp Business com tecnologia de ponta.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Produto</h4>
+                    <ul>
+                        <li><a href="#features">Recursos</a></li>
+                        <li><a href="#about">Sobre</a></li>
+                        <li><a href="/login">Login</a></li>
+                        <li><a href="/register">Registro</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Suporte</h4>
+                    <ul>
+                        <li><a href="#">Documentação</a></li>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Contato</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="#">Termos de Uso</a></li>
+                        <li><a href="#">Privacidade</a></li>
+                        <li><a href="#">Licença MIT</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 WaSolCRM. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/script/landing.js"></script>
 </body>
 </html>

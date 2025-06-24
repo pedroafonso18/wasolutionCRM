@@ -1,41 +1,156 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Register</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - WaSolCRM</title>
+    <link rel="stylesheet" href="/style/register.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <h2>Register</h2>
-    <form id="registerForm">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br><br>
-        <label for="isAdmin">Is Admin:</label>
-        <input type="checkbox" id="isAdmin" name="isAdmin"><br><br>
-        <button type="submit">Register</button>
-    </form>
-    <div id="message"></div>
-    <script>
-        document.getElementById('registerForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const isAdmin = document.getElementById('isAdmin').checked;
-            const response = await fetch('/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, isAdmin })
-            });
-            const data = await response.json();
-            if (response.ok && data.success) {
-                document.getElementById('message').innerText = data.success;
-                setTimeout(() => { window.location.href = '/login'; }, 1000);
-            } else {
-                document.getElementById('message').innerText = data.error || 'Registration failed.';
-            }
-        });
-    </script>
+    <div class="container">
+        <div class="register-container">
+            <!-- Left Side - Form -->
+            <div class="register-form">
+                <div class="form-header">
+                    <div class="logo">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>WaSolCRM</span>
+                    </div>
+                    <h1>Criar Conta</h1>
+                    <p>Junte-se ao WaSolCRM e transforme sua comunicação</p>
+                </div>
+
+                <form id="registerForm" class="form">
+                    <div class="form-group">
+                        <label for="username">
+                            <i class="fas fa-user"></i>
+                            Nome de usuário
+                        </label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            required 
+                            placeholder="Digite seu nome de usuário"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">
+                            <i class="fas fa-lock"></i>
+                            Senha
+                        </label>
+                        <div class="password-input">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                required 
+                                placeholder="Digite sua senha"
+                            >
+                            <button type="button" class="toggle-password" onclick="togglePassword()">
+                                <i class="fas fa-eye" id="eye-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">
+                            <i class="fas fa-lock"></i>
+                            Confirmar Senha
+                        </label>
+                        <div class="password-input">
+                            <input 
+                                type="password" 
+                                id="confirmPassword" 
+                                name="confirmPassword" 
+                                required 
+                                placeholder="Confirme sua senha"
+                            >
+                            <button type="button" class="toggle-password" onclick="toggleConfirmPassword()">
+                                <i class="fas fa-eye" id="confirm-eye-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="isAdmin">
+                            <span class="checkmark"></span>
+                            Criar como administrador
+                        </label>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="terms" required>
+                            <span class="checkmark"></span>
+                            Concordo com os <a href="#" class="terms-link">Termos de Uso</a> e <a href="#" class="terms-link">Política de Privacidade</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="register-btn">
+                        <span class="btn-text">Criar Conta</span>
+                        <span class="btn-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Criando conta...
+                        </span>
+                    </button>
+                </form>
+
+                <div class="login-link">
+                    <p>Já tem uma conta? <a href="/login">Fazer login</a></p>
+                </div>
+
+                <div id="message" class="message"></div>
+            </div>
+
+            <!-- Right Side - Illustration -->
+            <div class="register-illustration">
+                <div class="illustration-content">
+                    <div class="floating-card card-1">
+                        <i class="fas fa-rocket"></i>
+                        <h3>Comece Agora</h3>
+                        <p>Configure sua conta em minutos e comece a usar</p>
+                    </div>
+                    <div class="floating-card card-2">
+                        <i class="fas fa-shield-alt"></i>
+                        <h3>Segurança Total</h3>
+                        <p>Suas informações protegidas com criptografia avançada</p>
+                    </div>
+                    <div class="floating-card card-3">
+                        <i class="fas fa-headset"></i>
+                        <h3>Suporte 24/7</h3>
+                        <p>Nossa equipe está sempre pronta para ajudar</p>
+                    </div>
+                    <div class="phone-mockup">
+                        <div class="phone-screen">
+                            <div class="chat-bubble chat-1">
+                                <i class="fab fa-whatsapp"></i>
+                                <span>Bem-vindo ao WaSolCRM!</span>
+                            </div>
+                            <div class="chat-bubble chat-2">
+                                <span>Obrigado! Estou animado para começar</span>
+                            </div>
+                            <div class="chat-bubble chat-1">
+                                <i class="fab fa-whatsapp"></i>
+                                <span>Perfeito! Vamos configurar sua conta...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="illustration-bg">
+                    <div class="shape shape-1"></div>
+                    <div class="shape shape-2"></div>
+                    <div class="shape shape-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/script/register.js"></script>
 </body>
 </html>
 
