@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"WaSolCRM/internal/auth"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -11,6 +12,12 @@ func Router() {
 	r.LoadHTMLGlob("web/templates/*")
 
 	r.Static("/static", "./static")
+
+	r.GET("/login", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "login.html", gin.H{})
+	})
+
+	r.Use(auth.AuthMiddleware())
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
