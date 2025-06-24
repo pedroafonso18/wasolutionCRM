@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	DbUrl string
-	JWT   string
+	DbUrl    string
+	JWT      string
+	WaSolKey string
 }
 
 func LoadConfig() *Config {
@@ -18,7 +19,8 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		DbUrl: os.Getenv("DB_URL"),
-		JWT:   os.Getenv("JWT_KEY"),
+		DbUrl:    os.Getenv("DB_URL"),
+		JWT:      os.Getenv("JWT_KEY"),
+		WaSolKey: os.Getenv("WASOLUTION_KEY"),
 	}
 }
