@@ -90,7 +90,7 @@ func GetInstances(params WaSolParams) ApiResponse[InstancesResponse] {
 	}
 }
 
-func CreateInstance(params WaSolParams, inst Instance) ApiResponse[GenericResponse] {
+func CreateInstance(params WaSolParams, inst Instance) ApiResponse[CreateInstanceResponse] {
 	url := fmt.Sprintf("%s/createInstance", params.Url)
 	bodyMap := map[string]string{
 		"instance_id":   inst.InstanceID,
@@ -112,7 +112,7 @@ func CreateInstance(params WaSolParams, inst Instance) ApiResponse[GenericRespon
 
 	body, err := json.Marshal(bodyMap)
 	if err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[CreateInstanceResponse]{
 			Success: false,
 			Error:   "Failed to create body",
 		}
@@ -120,7 +120,7 @@ func CreateInstance(params WaSolParams, inst Instance) ApiResponse[GenericRespon
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[CreateInstanceResponse]{
 			Success: false,
 			Error:   "Failed to create request",
 		}
@@ -131,7 +131,7 @@ func CreateInstance(params WaSolParams, inst Instance) ApiResponse[GenericRespon
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[CreateInstanceResponse]{
 			Success: false,
 			Error:   "Request failed",
 		}
@@ -145,7 +145,7 @@ func CreateInstance(params WaSolParams, inst Instance) ApiResponse[GenericRespon
 
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[CreateInstanceResponse]{
 			Success: false,
 			Error:   "Failed to read response",
 		}
@@ -156,7 +156,7 @@ func CreateInstance(params WaSolParams, inst Instance) ApiResponse[GenericRespon
 	}
 
 	if err := json.Unmarshal(body, &statusCheck); err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[CreateInstanceResponse]{
 			Success: false,
 			Error:   "Failed to parse status",
 		}
@@ -165,12 +165,12 @@ func CreateInstance(params WaSolParams, inst Instance) ApiResponse[GenericRespon
 	if statusCheck.Status == "error" {
 		var errResp ErrorResponse
 		if err := json.Unmarshal(body, &errResp); err != nil {
-			return ApiResponse[GenericResponse]{
+			return ApiResponse[CreateInstanceResponse]{
 				Success: false,
 				Error:   "Failed to parse error response",
 			}
 		}
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[CreateInstanceResponse]{
 			Success: false,
 			Error:   fmt.Sprintf("%s: %s", errResp.Message, errResp.Error),
 		}
@@ -181,18 +181,18 @@ func CreateInstance(params WaSolParams, inst Instance) ApiResponse[GenericRespon
 	}
 
 	if err := json.Unmarshal(body, &successResp); err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[CreateInstanceResponse]{
 			Success: false,
 			Error:   "Failed to parse success response",
 		}
 	}
 
-	return ApiResponse[GenericResponse]{
+	return ApiResponse[CreateInstanceResponse]{
 		Success: true,
 	}
 }
 
-func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[GenericResponse] {
+func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[ConnectInstanceResponse] {
 	url := fmt.Sprintf("%s/connectInstance", params.Url)
 	bodyMap := map[string]string{
 		"instance_id": inst_id,
@@ -200,7 +200,7 @@ func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[GenericResp
 
 	body, err := json.Marshal(bodyMap)
 	if err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[ConnectInstanceResponse]{
 			Success: false,
 			Error:   "Failed to create body",
 		}
@@ -208,7 +208,7 @@ func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[GenericResp
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[ConnectInstanceResponse]{
 			Success: false,
 			Error:   "Failed to create request",
 		}
@@ -219,7 +219,7 @@ func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[GenericResp
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[ConnectInstanceResponse]{
 			Success: false,
 			Error:   "Request failed",
 		}
@@ -233,7 +233,7 @@ func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[GenericResp
 
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[ConnectInstanceResponse]{
 			Success: false,
 			Error:   "Failed to read response",
 		}
@@ -244,7 +244,7 @@ func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[GenericResp
 	}
 
 	if err := json.Unmarshal(body, &statusCheck); err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[ConnectInstanceResponse]{
 			Success: false,
 			Error:   "Failed to parse status",
 		}
@@ -253,12 +253,12 @@ func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[GenericResp
 	if statusCheck.Status == "error" {
 		var errResp ErrorResponse
 		if err := json.Unmarshal(body, &errResp); err != nil {
-			return ApiResponse[GenericResponse]{
+			return ApiResponse[ConnectInstanceResponse]{
 				Success: false,
 				Error:   "Failed to parse error response",
 			}
 		}
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[ConnectInstanceResponse]{
 			Success: false,
 			Error:   fmt.Sprintf("%s: %s", errResp.Message, errResp.Error),
 		}
@@ -269,13 +269,13 @@ func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[GenericResp
 	}
 
 	if err := json.Unmarshal(body, &successResp); err != nil {
-		return ApiResponse[GenericResponse]{
+		return ApiResponse[ConnectInstanceResponse]{
 			Success: false,
 			Error:   "Failed to parse success response",
 		}
 	}
 
-	return ApiResponse[GenericResponse]{
+	return ApiResponse[ConnectInstanceResponse]{
 		Success: true,
 	}
 }

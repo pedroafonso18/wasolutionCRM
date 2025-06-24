@@ -44,3 +44,21 @@ type Message struct {
 	Body       string
 	Type       string
 }
+
+type CreateInstanceResponse struct {
+	QrCode *CreateInstanceQrCode_ `json:"qrcode,omitempty"`
+	Data   *CreateInstanceData_   `json:"data,omitempty"`
+}
+
+type CreateInstanceQrCode_ struct {
+	Base64 string `json:"base64"`
+}
+
+type CreateInstanceData_ struct {
+	QrCode string `json:"QRCode"`
+}
+
+type ConnectInstanceResponse struct {
+	Base64 *string              `json:"base64,omitempty"`
+	Data   *CreateInstanceData_ `json:"data,omitempty"`
+}
