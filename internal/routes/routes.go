@@ -17,7 +17,7 @@ func Router() {
 		c.HTML(http.StatusOK, "login.html", gin.H{})
 	})
 
-	r.Use(auth.AuthMiddleware())
+	r.Use(auth.Middleware())
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
