@@ -4,6 +4,7 @@ import (
 	"WaSolCRM/config"
 	"WaSolCRM/internal/auth"
 	"WaSolCRM/internal/database"
+	api "WaSolCRM/internal/handlers"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -66,9 +67,24 @@ func Router() {
 			return
 		}
 		auth.Login(c, &req)
+		c.Redirect(http.StatusSeeOther, "/chats")
 	})
 
 	r.Use(auth.Middleware())
+
+	r.GET("/chats", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "chats.html", gin.H{})
+	})
+
+	r.GET("/api/chats", func(c *gin.Context) {
+		api.GetChatsHandler(c.Writer, c.Request)
+	})
+
+	r.GET("/api/chats/:chatID/messages", func(c *gin.Context) {
+		chatID := c.Param("chatID")
+		c.Request.URL.RawQuery = "chatID=" + chatID
+		api.GetMessagesHandler(c.Writer, c.Request)
+	})
 
 	err := r.Run(":8080")
 	if err != nil {

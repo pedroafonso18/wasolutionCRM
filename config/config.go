@@ -7,10 +7,12 @@ import (
 )
 
 type Config struct {
-	DbUrl    string
-	JWT      string
-	WaSolKey string
-	RabbitMQ string
+	DbUrl         string
+	JWT           string
+	WaSolKey      string
+	RabbitMQ      string
+	RedisUrl      string
+	RedisPassword string
 }
 
 func LoadConfig() *Config {
@@ -20,9 +22,11 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		DbUrl:    os.Getenv("DB_URL"),
-		JWT:      os.Getenv("JWT_KEY"),
-		WaSolKey: os.Getenv("WASOLUTION_KEY"),
-		RabbitMQ: os.Getenv("RABBITMQ_URL"),
+		DbUrl:         os.Getenv("DB_URL"),
+		JWT:           os.Getenv("JWT_KEY"),
+		WaSolKey:      os.Getenv("WASOLUTION_KEY"),
+		RabbitMQ:      os.Getenv("RABBITMQ_URL"),
+		RedisUrl:      os.Getenv("REDIS_URL"),
+		RedisPassword: os.Getenv("REDIS_PASSWORD"),
 	}
 }

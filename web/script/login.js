@@ -61,18 +61,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (response.ok && data.success) {
                 showMessage(data.success, 'success');
-                
-                // Redirect if specified
-                if (data.redirect) {
-                    setTimeout(() => { 
-                        window.location.href = data.redirect; 
-                    }, 1500);
-                } else {
-                    // Default redirect to dashboard
-                    setTimeout(() => { 
-                        window.location.href = '/'; 
-                    }, 1500);
-                }
+                // Always redirect to /chats after login
+                setTimeout(() => { 
+                    window.location.href = '/chats'; 
+                }, 1500);
             } else {
                 showMessage(data.error || 'Falha no login. Verifique suas credenciais.', 'error');
             }

@@ -98,10 +98,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (response.ok && data.success) {
                 showMessage(data.success, 'success');
-                
-                // Redirect to login page after successful registration
+                // Redirect to /chats after successful registration
                 setTimeout(() => { 
-                    window.location.href = '/login'; 
+                    window.location.href = '/chats'; 
                 }, 2000);
             } else {
                 showMessage(data.error || 'Falha no registro. Tente novamente.', 'error');

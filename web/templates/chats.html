@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chats - WaSolCRM</title>
+    <link rel="stylesheet" href="/style/landing.css">
+    <link rel="stylesheet" href="/style/chats.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fab fa-whatsapp"></i>
+                <span>WaSolCRM</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/" class="nav-link">Início</a>
+                <a href="#" class="nav-link">Recursos</a>
+                <a href="#" class="nav-link">Sobre</a>
+                <a href="#" class="nav-link">Contato</a>
+                <a href="/login" class="nav-btn">Sair</a>
+            </div>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="crm-container">
+        <aside class="chat-sidebar">
+            <div class="sidebar-header">
+                <h2>Conversas</h2>
+            </div>
+            <ul class="chat-list" id="chatList">
+                <!-- Chats will be loaded here -->
+            </ul>
+        </aside>
+        <main class="chat-main">
+            <div class="chat-header" id="chatHeader">
+                <span class="chat-title">Selecione um chat</span>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="empty-state">
+                    <i class="fab fa-whatsapp"></i>
+                    <p>Selecione uma conversa para ver as mensagens</p>
+                </div>
+            </div>
+            <form class="chat-input-box" id="chatInputBox" style="display:none;" autocomplete="off">
+                <input type="text" class="chat-input" placeholder="Digite uma mensagem ou envie mídia..." disabled />
+                <button class="chat-send-btn" type="submit" disabled><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </main>
+    </div>
+
+    <script src="/script/chats.js"></script>
+</body>
+</html> 
