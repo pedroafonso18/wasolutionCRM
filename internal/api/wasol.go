@@ -1,96 +1,24 @@
 package api
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 )
 
-func GetInstances(params WaSolParams) ApiResponse[InstancesResponse] {
+func GetInstances(params WaSolParams) DetailedRequest {
 	url := fmt.Sprintf("%s/retrieveInstances", params.Url)
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return ApiResponse[InstancesResponse]{
-			Success: false,
-			Error:   "Failed to create request",
-		}
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", params.Token),
 	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", params.Token))
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ApiResponse[InstancesResponse]{
-			Success: false,
-			Error:   "Request failed",
-		}
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
-	}(resp.Body)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return ApiResponse[InstancesResponse]{
-			Success: false,
-			Error:   "Failed to read response",
-		}
-	}
-
-	var statusCheck struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &statusCheck); err != nil {
-		return ApiResponse[InstancesResponse]{
-			Success: false,
-			Error:   "Failed to parse status",
-		}
-	}
-
-	if statusCheck.Status == "error" {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return ApiResponse[InstancesResponse]{
-				Success: false,
-				Error:   "Failed to parse error response",
-			}
-		}
-		return ApiResponse[InstancesResponse]{
-			Success: false,
-			Error:   fmt.Sprintf("%s: %s", errResp.Message, errResp.Error),
-		}
-	}
-
-	var successResp struct {
-		Status    string     `json:"status"`
-		Count     int        `json:"count"`
-		Instances []Instance `json:"instances"`
-	}
-
-	if err := json.Unmarshal(body, &successResp); err != nil {
-		return ApiResponse[InstancesResponse]{
-			Success: false,
-			Error:   "Failed to parse success response",
-		}
-	}
-
-	return ApiResponse[InstancesResponse]{
-		Success: true,
-		Data: &InstancesResponse{
-			Count:     successResp.Count,
-			Instances: successResp.Instances,
-		},
+	return DetailedRequest{
+		Action:  "GetInstances",
+		Method:  http.MethodGet,
+		Url:     url,
+		Headers: headers,
 	}
 }
 
-func CreateInstance(params WaSolParams, inst Instance) ApiResponse[CreateInstanceResponse] {
+func CreateInstance(params WaSolParams, inst Instance) DetailedRequest {
 	url := fmt.Sprintf("%s/createInstance", params.Url)
 	bodyMap := map[string]string{
 		"instance_id":   inst.InstanceID,
@@ -109,178 +37,38 @@ func CreateInstance(params WaSolParams, inst Instance) ApiResponse[CreateInstanc
 	if inst.WabaID != "" {
 		bodyMap["waba_id"] = inst.WabaID
 	}
-
-	body, err := json.Marshal(bodyMap)
-	if err != nil {
-		return ApiResponse[CreateInstanceResponse]{
-			Success: false,
-			Error:   "Failed to create body",
-		}
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", params.Token),
+		"Content-Type":  "application/json",
 	}
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return ApiResponse[CreateInstanceResponse]{
-			Success: false,
-			Error:   "Failed to create request",
-		}
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", params.Token))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ApiResponse[CreateInstanceResponse]{
-			Success: false,
-			Error:   "Request failed",
-		}
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
-	}(resp.Body)
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return ApiResponse[CreateInstanceResponse]{
-			Success: false,
-			Error:   "Failed to read response",
-		}
-	}
-
-	var statusCheck struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &statusCheck); err != nil {
-		return ApiResponse[CreateInstanceResponse]{
-			Success: false,
-			Error:   "Failed to parse status",
-		}
-	}
-
-	if statusCheck.Status == "error" {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return ApiResponse[CreateInstanceResponse]{
-				Success: false,
-				Error:   "Failed to parse error response",
-			}
-		}
-		return ApiResponse[CreateInstanceResponse]{
-			Success: false,
-			Error:   fmt.Sprintf("%s: %s", errResp.Message, errResp.Error),
-		}
-	}
-
-	var successResp struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &successResp); err != nil {
-		return ApiResponse[CreateInstanceResponse]{
-			Success: false,
-			Error:   "Failed to parse success response",
-		}
-	}
-
-	return ApiResponse[CreateInstanceResponse]{
-		Success: true,
+	return DetailedRequest{
+		Action:  "CreateInstance",
+		Method:  http.MethodPost,
+		Url:     url,
+		Headers: headers,
+		Body:    bodyMap,
 	}
 }
 
-func ConnectInstance(params WaSolParams, inst_id string) ApiResponse[ConnectInstanceResponse] {
+func ConnectInstance(params WaSolParams, inst_id string) DetailedRequest {
 	url := fmt.Sprintf("%s/connectInstance", params.Url)
 	bodyMap := map[string]string{
 		"instance_id": inst_id,
 	}
-
-	body, err := json.Marshal(bodyMap)
-	if err != nil {
-		return ApiResponse[ConnectInstanceResponse]{
-			Success: false,
-			Error:   "Failed to create body",
-		}
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", params.Token),
+		"Content-Type":  "application/json",
 	}
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return ApiResponse[ConnectInstanceResponse]{
-			Success: false,
-			Error:   "Failed to create request",
-		}
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", params.Token))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ApiResponse[ConnectInstanceResponse]{
-			Success: false,
-			Error:   "Request failed",
-		}
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
-	}(resp.Body)
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return ApiResponse[ConnectInstanceResponse]{
-			Success: false,
-			Error:   "Failed to read response",
-		}
-	}
-
-	var statusCheck struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &statusCheck); err != nil {
-		return ApiResponse[ConnectInstanceResponse]{
-			Success: false,
-			Error:   "Failed to parse status",
-		}
-	}
-
-	if statusCheck.Status == "error" {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return ApiResponse[ConnectInstanceResponse]{
-				Success: false,
-				Error:   "Failed to parse error response",
-			}
-		}
-		return ApiResponse[ConnectInstanceResponse]{
-			Success: false,
-			Error:   fmt.Sprintf("%s: %s", errResp.Message, errResp.Error),
-		}
-	}
-
-	var successResp struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &successResp); err != nil {
-		return ApiResponse[ConnectInstanceResponse]{
-			Success: false,
-			Error:   "Failed to parse success response",
-		}
-	}
-
-	return ApiResponse[ConnectInstanceResponse]{
-		Success: true,
+	return DetailedRequest{
+		Action:  "ConnectInstance",
+		Method:  http.MethodPost,
+		Url:     url,
+		Headers: headers,
+		Body:    bodyMap,
 	}
 }
 
-func SendMessage(params WaSolParams, msg Message) ApiResponse[GenericResponse] {
+func SendMessage(params WaSolParams, msg Message) DetailedRequest {
 	url := fmt.Sprintf("%s/sendMessage", params.Url)
 	bodyMap := map[string]string{
 		"instance_id": msg.InstanceId,
@@ -289,349 +77,71 @@ func SendMessage(params WaSolParams, msg Message) ApiResponse[GenericResponse] {
 		"type":        msg.Type,
 	}
 
-	body, err := json.Marshal(bodyMap)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to create body",
-		}
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", params.Token),
+		"Content-Type":  "application/json",
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to create request",
-		}
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", params.Token))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Request failed",
-		}
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
-	}(resp.Body)
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to read response",
-		}
-	}
-
-	var statusCheck struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &statusCheck); err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to parse status",
-		}
-	}
-
-	if statusCheck.Status == "error" {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return ApiResponse[GenericResponse]{
-				Success: false,
-				Error:   "Failed to parse error response",
-			}
-		}
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   fmt.Sprintf("%s: %s", errResp.Message, errResp.Error),
-		}
-	}
-
-	var successResp struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &successResp); err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to parse success response",
-		}
-	}
-
-	return ApiResponse[GenericResponse]{
-		Success: true,
+	return DetailedRequest{
+		Action:  "SendMessage",
+		Method:  http.MethodPost,
+		Url:     url,
+		Headers: headers,
+		Body:    bodyMap,
 	}
 }
 
-func DeleteInstance(params WaSolParams, instid string) ApiResponse[GenericResponse] {
+func DeleteInstance(params WaSolParams, instid string) DetailedRequest {
 	url := fmt.Sprintf("%s/deleteInstance", params.Url)
 	bodyMap := map[string]string{
 		"instance_id": instid,
 	}
-
-	body, err := json.Marshal(bodyMap)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to create body",
-		}
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", params.Token),
+		"Content-Type":  "application/json",
 	}
-
-	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewReader(body))
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to create request",
-		}
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", params.Token))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Request failed",
-		}
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
-	}(resp.Body)
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to read response",
-		}
-	}
-
-	var statusCheck struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &statusCheck); err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to parse status",
-		}
-	}
-
-	if statusCheck.Status == "error" {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return ApiResponse[GenericResponse]{
-				Success: false,
-				Error:   "Failed to parse error response",
-			}
-		}
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   fmt.Sprintf("%s: %s", errResp.Message, errResp.Error),
-		}
-	}
-
-	var successResp struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &successResp); err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to parse success response",
-		}
-	}
-
-	return ApiResponse[GenericResponse]{
-		Success: true,
+	return DetailedRequest{
+		Action:  "DeleteInstance",
+		Method:  http.MethodDelete,
+		Url:     url,
+		Headers: headers,
+		Body:    bodyMap,
 	}
 }
 
-func LogoutInstance(params WaSolParams, instid string) ApiResponse[GenericResponse] {
+func LogoutInstance(params WaSolParams, instid string) DetailedRequest {
 	url := fmt.Sprintf("%s/logoutInstance", params.Url)
 	bodyMap := map[string]string{
 		"instance_id": instid,
 	}
-
-	body, err := json.Marshal(bodyMap)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to create body",
-		}
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", params.Token),
+		"Content-Type":  "application/json",
 	}
-
-	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewReader(body))
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to create request",
-		}
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", params.Token))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Request failed",
-		}
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
-	}(resp.Body)
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to read response",
-		}
-	}
-
-	var statusCheck struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &statusCheck); err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to parse status",
-		}
-	}
-
-	if statusCheck.Status == "error" {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return ApiResponse[GenericResponse]{
-				Success: false,
-				Error:   "Failed to parse error response",
-			}
-		}
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   fmt.Sprintf("%s: %s", errResp.Message, errResp.Error),
-		}
-	}
-
-	var successResp struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &successResp); err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to parse success response",
-		}
-	}
-
-	return ApiResponse[GenericResponse]{
-		Success: true,
+	return DetailedRequest{
+		Action:  "LogoutInstance",
+		Method:  http.MethodDelete,
+		Url:     url,
+		Headers: headers,
+		Body:    bodyMap,
 	}
 }
 
-func ConfigWebhook(params WaSolParams, instid string, webhookUrl string) ApiResponse[GenericResponse] {
+func ConfigWebhook(params WaSolParams, instid string, webhookUrl string) DetailedRequest {
 	url := fmt.Sprintf("%s/setWebhook", params.Url)
 	bodyMap := map[string]string{
 		"instance_id": instid,
 		"webhook_url": webhookUrl,
 	}
-
-	body, err := json.Marshal(bodyMap)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to create body",
-		}
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", params.Token),
+		"Content-Type":  "application/json",
 	}
-
-	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewReader(body))
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to create request",
-		}
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", params.Token))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Request failed",
-		}
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
-	}(resp.Body)
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to read response",
-		}
-	}
-
-	var statusCheck struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &statusCheck); err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to parse status",
-		}
-	}
-
-	if statusCheck.Status == "error" {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return ApiResponse[GenericResponse]{
-				Success: false,
-				Error:   "Failed to parse error response",
-			}
-		}
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   fmt.Sprintf("%s: %s", errResp.Message, errResp.Error),
-		}
-	}
-
-	var successResp struct {
-		Status string `json:"status"`
-	}
-
-	if err := json.Unmarshal(body, &successResp); err != nil {
-		return ApiResponse[GenericResponse]{
-			Success: false,
-			Error:   "Failed to parse success response",
-		}
-	}
-
-	return ApiResponse[GenericResponse]{
-		Success: true,
+	return DetailedRequest{
+		Action:  "ConfigWebhook",
+		Method:  http.MethodDelete,
+		Url:     url,
+		Headers: headers,
+		Body:    bodyMap,
 	}
 }

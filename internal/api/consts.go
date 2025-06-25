@@ -62,3 +62,12 @@ type ConnectInstanceResponse struct {
 	Base64 *string              `json:"base64,omitempty"`
 	Data   *CreateInstanceData_ `json:"data,omitempty"`
 }
+
+type DetailedRequest struct {
+	Action  string            `json:"action"`
+	Method  string            `json:"method"`
+	Url     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Body    map[string]string `json:"body,omitempty"`
+	Params  map[string]string `json:"params,omitempty"`
+}

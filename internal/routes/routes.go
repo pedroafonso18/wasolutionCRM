@@ -68,13 +68,7 @@ func Router() {
 		auth.Login(c, &req)
 	})
 
-	// Protected routes (require authentication)
 	r.Use(auth.Middleware())
-
-	// Add protected routes here in the future
-	// r.GET("/dashboard", func(c *gin.Context) {
-	//     c.HTML(http.StatusOK, "dashboard.html", gin.H{})
-	// })
 
 	err := r.Run(":8080")
 	if err != nil {
