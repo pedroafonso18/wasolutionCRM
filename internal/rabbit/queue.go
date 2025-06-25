@@ -8,7 +8,8 @@ import (
 )
 
 func SendToQueue(channel *amqp.Channel, request api.DetailedRequest) error {
-	_, err := channel.QueueDeclare("outgoing_requests", true, false, false, false, nil)
+	args := amqp.Table{"x-queue-type": "quorum"}
+	_, err := channel.QueueDeclare("outgoing_requests", true, false, false, false, args)
 	if err != nil {
 		log.Fatalf("Error: Couldn't declare queue on RabbitMq: %s", err)
 		return err
