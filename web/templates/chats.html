@@ -22,7 +22,7 @@
                 <a href="#" class="nav-link">Recursos</a>
                 <a href="#" class="nav-link">Sobre</a>
                 <a href="#" class="nav-link">Contato</a>
-                <a href="/login" class="nav-btn">Sair</a>
+                <a href="/logout" class="nav-btn">Sair</a>
             </div>
             <div class="hamburger">
                 <span></span>
@@ -36,14 +36,35 @@
         <aside class="chat-sidebar">
             <div class="sidebar-header">
                 <h2>Conversas</h2>
+                <div class="chat-tabs" id="chatTabs">
+                    <button class="tab-btn active" data-tab="all">Todos</button>
+                    <button class="tab-btn" data-tab="my">Meus chats</button>
+                    <button class="tab-btn" data-tab="queue" id="queueTab" style="display:none;">Fila</button>
+                </div>
             </div>
             <ul class="chat-list" id="chatList">
-                <!-- Chats will be loaded here -->
             </ul>
         </aside>
         <main class="chat-main">
             <div class="chat-header" id="chatHeader">
                 <span class="chat-title">Selecione um chat</span>
+                <div class="chat-actions" id="chatActions" style="display:none;">
+                    <button class="action-btn" id="takeChatBtn" title="Pegar chat">
+                        <i class="fas fa-hand-paper"></i>
+                    </button>
+                    <button class="action-btn" id="transferBtn" title="Transferir chat">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
+                    <button class="action-btn" id="startChatBtn" title="Iniciar chat">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="action-btn" id="takeCallBtn" title="Pegar chamado" style="display:none;">
+                        <i class="fas fa-hand-paper"></i>
+                    </button>
+                    <button class="action-btn" id="transferCallBtn" title="Transferir chamado" style="display:none;">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
             </div>
             <div class="chat-messages" id="chatMessages">
                 <div class="empty-state">
@@ -56,6 +77,28 @@
                 <button class="chat-send-btn" type="submit" disabled><i class="fas fa-paper-plane"></i></button>
             </form>
         </main>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div class="modal" id="transferModal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="transferModalTitle">Transferir Chat</h3>
+                <button class="modal-close" id="transferModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="transferAgent">Selecione o usuário:</label>
+                    <select id="transferAgent" class="form-control">
+                        <option value="">Selecione um usuário...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="transferCancel">Cancelar</button>
+                <button class="btn btn-primary" id="transferConfirm">Transferir</button>
+            </div>
+        </div>
     </div>
 
     <script src="/script/chats.js"></script>

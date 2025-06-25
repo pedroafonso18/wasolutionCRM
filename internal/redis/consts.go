@@ -8,7 +8,17 @@ type Message struct {
 	Timestamp string `json:"timestamp"`
 }
 
+type Chat struct {
+	ID        string  `json:"id"`
+	Situation string  `json:"situation"`
+	IsActive  bool    `json:"is_active"`
+	AgentID   *string `json:"agent_id"`
+}
+
 type ChatPreview struct {
-	ChatID      string  `json:"chat_id"`
-	LastMessage Message `json:"last_message"`
+	ID          string  `json:"id"`
+	Situation   string  `json:"situation"`
+	IsActive    bool    `json:"is_active"`
+	AgentID     *string `json:"agent_id"`
+	LastMessage Message `json:"last_message,omitempty"`
 }

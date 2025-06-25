@@ -70,6 +70,11 @@ func Router() {
 		c.Redirect(http.StatusSeeOther, "/chats")
 	})
 
+	r.GET("/logout", func(c *gin.Context) {
+		c.SetCookie("token", "", -1, "/", "", false, true)
+		c.Redirect(http.StatusFound, "/login")
+	})
+
 	r.Use(auth.Middleware())
 
 	r.GET("/chats", func(c *gin.Context) {
@@ -80,10 +85,44 @@ func Router() {
 		api.GetChatsHandler(c.Writer, c.Request)
 	})
 
+	r.GET("/api/queue", func(c *gin.Context) {
+		api.GetQueuedChatsHandler(c.Writer, c.Request)
+	})
+
 	r.GET("/api/chats/:chatID/messages", func(c *gin.Context) {
 		chatID := c.Param("chatID")
 		c.Request.URL.RawQuery = "chatID=" + chatID
 		api.GetMessagesHandler(c.Writer, c.Request)
+	})
+
+	r.GET("/api/user-info", func(c *gin.Context) {
+		api.GetUserInfoHandler(c.Writer, c.Request)
+	})
+
+	r.GET("/api/chats/my/:userID", func(c *gin.Context) {
+		userID := c.Param("userID")
+		c.Request.URL.RawQuery = "userID=" + userID
+		api.GetMyChatsHandler(c.Writer, c.Request)
+	})
+
+	r.GET("/api/agents", func(c *gin.Context) {
+		api.GetAgentsHandler(c.Writer, c.Request)
+	})
+
+	r.GET("/api/users", func(c *gin.Context) {
+		api.GetAllUsersHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/chats/transfer", func(c *gin.Context) {
+		api.TransferChatHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/chats/start", func(c *gin.Context) {
+		api.StartChatHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/chats/take", func(c *gin.Context) {
+		api.TakeChatHandler(c.Writer, c.Request)
 	})
 
 	err := r.Run(":8080")

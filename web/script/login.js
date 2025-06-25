@@ -1,6 +1,19 @@
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     
+    // Check if user is already authenticated
+    fetch('/api/user-info', { credentials: 'include' })
+        .then(res => {
+            if (res.ok) {
+                // User is already logged in, redirect to chats
+                window.location.href = '/chats';
+                return;
+            }
+        })
+        .catch(() => {
+            // Not authenticated, continue with login form
+        });
+    
     // Get DOM elements
     const loginForm = document.getElementById('loginForm');
     const usernameInput = document.getElementById('username');
