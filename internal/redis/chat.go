@@ -370,3 +370,45 @@ func TakeChat(rdb *redis.Client, chatID, agentID string) error {
 
 	return nil
 }
+
+func AddMessage(rdb *redis.Client, chatID string, message Message) error {
+	ctx := context.Background()
+
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to encode message: %w", err)
+	}
+
+	msgKey := fmt.Sprintf("chat:%s:messages", chatID)
+	err = rdb.RPush(ctx, msgKey, messageJSON).Err()
+	if err != nil {
+		return fmt.Errorf("failed to add message to Redis: %w", err)
+	}
+
+	chatKey := fmt.Sprintf("chat:%s", chatID)
+	_, err = rdb.LIndex(ctx, chatKey, 0).Result()
+	if err == redis.Nil {
+		chat := Chat{
+			ID:        chatID,
+			Situation: "active",
+			IsActive:  true,
+		}
+		newChatJSON, err := json.Marshal(chat)
+		if err != nil {
+			return fmt.Errorf("failed to encode new chat: %w", err)
+		}
+		err = rdb.RPush(ctx, chatKey, newChatJSON).Err()
+		if err != nil {
+			return fmt.Errorf("failed to create chat: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to fetch chat data: %w", err)
+	}
+
+	err = rdb.SAdd(ctx, "chats", chatID).Err()
+	if err != nil {
+		return fmt.Errorf("failed to add chat to global set: %w", err)
+	}
+
+	return nil
+}

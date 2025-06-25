@@ -39,25 +39,38 @@ func Router() {
 			IsAdmin  bool   `json:"isAdmin"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
 			return
 		}
+
+		if req.Username == "" || req.Password == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username and password are required"})
+			return
+		}
+
 		loadConfig := config.LoadConfig()
+		if loadConfig.DbUrl == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database URL not configured"})
+			return
+		}
+
 		db, err := database.OpenConn(loadConfig.DbUrl)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "DB connection failed"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection failed: " + err.Error()})
 			return
 		}
+		defer db.Close()
+
 		ok, err := auth.CreateUser(db, auth.LoginT{Login: req.Username, Password: req.Password}, req.IsAdmin)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user: " + err.Error()})
 			return
 		}
 		if !ok {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "User not created"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User not created - username might already exist"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"success": "User registered!"})
+		c.JSON(http.StatusOK, gin.H{"success": "User registered successfully!"})
 	})
 
 	r.POST("/login", func(c *gin.Context) {
@@ -71,14 +84,17 @@ func Router() {
 	})
 
 	r.GET("/logout", func(c *gin.Context) {
-		c.SetCookie("token", "", -1, "/", "", false, true)
-		c.Redirect(http.StatusFound, "/login")
+		c.Redirect(http.StatusFound, "/api/logout")
 	})
 
 	r.Use(auth.Middleware())
 
 	r.GET("/chats", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "chats.html", gin.H{})
+		c.HTML(http.StatusOK, "chats.html", nil)
+	})
+
+	r.GET("/instances", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "instances.html", nil)
 	})
 
 	r.GET("/api/chats", func(c *gin.Context) {
@@ -125,7 +141,35 @@ func Router() {
 		api.TakeChatHandler(c.Writer, c.Request)
 	})
 
-	err := r.Run(":8080")
+	r.POST("/api/chats/send-message", func(c *gin.Context) {
+		api.SendMessageHandler(c.Writer, c.Request)
+	})
+
+	r.GET("/api/instances", func(c *gin.Context) {
+		api.GetInstancesHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/instances/create", func(c *gin.Context) {
+		api.CreateInstanceHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/instances/connect", func(c *gin.Context) {
+		api.ConnectInstanceHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/instances/delete", func(c *gin.Context) {
+		api.DeleteInstanceHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/instances/logout", func(c *gin.Context) {
+		api.LogoutInstanceHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/instances/webhook", func(c *gin.Context) {
+		api.ConfigWebhookHandler(c.Writer, c.Request)
+	})
+
+	err := r.Run(":8000")
 	if err != nil {
 		return
 	}

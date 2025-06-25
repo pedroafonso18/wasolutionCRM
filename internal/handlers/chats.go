@@ -2,7 +2,9 @@ package api
 
 import (
 	"WaSolCRM/config"
+	"WaSolCRM/internal/api"
 	"WaSolCRM/internal/database"
+	"WaSolCRM/internal/rabbit"
 	waRedis "WaSolCRM/internal/redis"
 	"database/sql"
 	"encoding/json"
@@ -10,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -400,6 +403,104 @@ func TakeChatHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"success": "Chat taken successfully"})
+}
+
+func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("SendMessageHandler called")
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+
+	var req struct {
+		ChatID     string `json:"chatId"`
+		Message    string `json:"message"`
+		InstanceID string `json:"instanceId"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("JSON decode error: %v", err)
+		http.Error(w, "Invalid request body", 400)
+		return
+	}
+
+	if req.ChatID == "" || req.Message == "" || req.InstanceID == "" {
+		http.Error(w, "Missing chatId, message, or instanceId", 400)
+		return
+	}
+
+	user, err := getUserFromToken(r)
+	if err != nil {
+		log.Printf("Error getting user from token: %v", err)
+		http.Error(w, "Unauthorized", 401)
+		return
+	}
+
+	agentID := user["username"].(string)
+
+	cfg := config.LoadConfig()
+
+	ch, err := rabbit.ConnectRabbit(cfg.RabbitMQ)
+	if err != nil {
+		log.Printf("RabbitMQ connection error: %v", err)
+		http.Error(w, "Failed to connect to RabbitMQ", 500)
+		return
+	}
+	defer ch.Close()
+
+	wasolParams := api.WaSolParams{
+		Token: cfg.WaSolKey,
+		Url:   "https://api.wasolution.com.br",
+	}
+
+	message := api.Message{
+		InstanceId: req.InstanceID,
+		Number:     req.ChatID,
+		Body:       req.Message,
+		Type:       "text",
+	}
+
+	detailedRequest := api.SendMessage(wasolParams, message)
+
+	err = rabbit.SendToQueue(ch, detailedRequest)
+	if err != nil {
+		log.Printf("SendToQueue error: %v", err)
+		http.Error(w, "Failed to queue message", 500)
+		return
+	}
+
+	rdb, err := waRedis.ConnectRedis(cfg.RedisUrl, cfg.RedisPassword)
+	if err != nil {
+		log.Printf("Redis connection error: %v", err)
+		http.Error(w, "Failed to connect to Redis", 500)
+		return
+	}
+
+	redisMessage := waRedis.Message{
+		ID:        fmt.Sprintf("msg_%d", time.Now().Unix()),
+		From:      "me",
+		To:        req.ChatID,
+		Text:      req.Message,
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	err = waRedis.AddMessage(rdb, req.ChatID, redisMessage)
+	if err != nil {
+		log.Printf("AddMessage error: %v", err)
+		http.Error(w, "Failed to save message", 500)
+		return
+	}
+
+	log.Printf("Successfully queued message for chat %s by agent %s", req.ChatID, agentID)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"success": "Message sent successfully"})
 }
 
 func getUserFromToken(r *http.Request) (map[string]interface{}, error) {

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaSolCRM - Gerenciar Instâncias</title>
+    <link rel="stylesheet" href="/style/landing.css">
+    <link rel="stylesheet" href="/style/instances.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fab fa-whatsapp"></i>
+                <span>WaSolCRM</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/chats" class="nav-link">Chats</a>
+                <a href="/instances" class="nav-link active">Instâncias</a>
+                <a href="/logout" class="nav-btn">Sair</a>
+            </div>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="instances-container">
+        <aside class="instances-sidebar">
+            <div class="sidebar-header">
+                <h2>Instâncias</h2>
+                <p>Gerencie suas instâncias do WhatsApp</p>
+                <button id="createInstanceBtn" class="create-instance-btn">
+                    <i class="fas fa-plus"></i> Nova Instância
+                </button>
+            </div>
+            <ul class="instances-list" id="instancesList">
+                <!-- Instances will be loaded here -->
+            </ul>
+        </aside>
+        <main class="instances-main">
+            <div class="instances-header" id="instancesHeader">
+                <span class="instance-title">Selecione uma instância</span>
+            </div>
+            <div class="instances-content" id="instancesContent">
+                <div class="empty-state">
+                    <i class="fab fa-whatsapp"></i>
+                    <p>Selecione uma instância para ver os detalhes</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create Instance Modal -->
+    <div id="createInstanceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nova Instância</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="createInstanceForm">
+                    <div class="form-group">
+                        <label for="instanceId">ID da Instância:</label>
+                        <input type="text" id="instanceId" name="instanceId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="instanceName">Nome da Instância:</label>
+                        <input type="text" id="instanceName" name="instanceName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="instanceType">Tipo da Instância:</label>
+                        <select id="instanceType" name="instanceType" required>
+                            <option value="">Selecione um tipo...</option>
+                            <option value="WUZAPI">Wuzapi</option>
+                            <option value="EVOLUTION">Evolution</option>
+                            <option value="CLOUD">Cloud</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="webhookUrl">URL do Webhook (opcional):</label>
+                        <input type="url" id="webhookUrl" name="webhookUrl">
+                    </div>
+                    <div class="form-group">
+                        <label for="proxyUrl">URL do Proxy (opcional):</label>
+                        <input type="url" id="proxyUrl" name="proxyUrl">
+                    </div>
+                    <div class="form-group">
+                        <label for="accessToken">Token de Acesso (opcional):</label>
+                        <input type="text" id="accessToken" name="accessToken">
+                    </div>
+                    <div class="form-group">
+                        <label for="wabaId">WABA ID (opcional):</label>
+                        <input type="text" id="wabaId" name="wabaId">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelCreate">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Criar Instância</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrCodeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>QR Code para Conectar</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="qr-container">
+                    <img id="qrCodeImage" src="" alt="QR Code">
+                    <p>Escaneie este QR Code com seu WhatsApp para conectar a instância</p>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="closeQrModal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Webhook Config Modal -->
+    <div id="webhookModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configurar Webhook</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="webhookForm">
+                    <input type="hidden" id="webhookInstanceId" name="instanceId">
+                    <div class="form-group">
+                        <label for="webhookUrlInput">URL do Webhook:</label>
+                        <input type="url" id="webhookUrlInput" name="webhookUrl" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelWebhook">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Configurar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/script/instances.js"></script>
+</body>
+</html> 

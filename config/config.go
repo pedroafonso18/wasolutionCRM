@@ -1,15 +1,17 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
 	DbUrl         string
 	JWT           string
 	WaSolKey      string
+	WaSolUrl      string
 	RabbitMQ      string
 	RedisUrl      string
 	RedisPassword string
@@ -28,5 +30,6 @@ func LoadConfig() *Config {
 		RabbitMQ:      os.Getenv("RABBITMQ_URL"),
 		RedisUrl:      os.Getenv("REDIS_URL"),
 		RedisPassword: os.Getenv("REDIS_PASSWORD"),
+		WaSolUrl:      os.Getenv("WASOLUTION_URL"),
 	}
 }

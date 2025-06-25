@@ -13,11 +13,34 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(userData => {
             console.log('User data:', userData);
+            
             // Show queue tab for admins
             if (userData && userData.isAdmin) {
                 const queueTab = document.getElementById('queueTab');
                 if (queueTab) {
                     queueTab.style.display = 'inline-block';
+                }
+                
+                // Load all chats for admin users
+                fetchChats();
+            } else {
+                // For non-admin users, hide the "Todos" tab and switch to "Meus chats"
+                const allTab = document.querySelector('[data-tab="all"]');
+                if (allTab) {
+                    allTab.style.display = 'none';
+                }
+                
+                // Switch to "Meus chats" tab by default for non-admin users
+                const myTab = document.querySelector('[data-tab="my"]');
+                if (myTab) {
+                    // Remove active class from all tabs
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to "Meus chats" tab
+                    myTab.classList.add('active');
+                    currentTab = 'my';
+                    
+                    // Load my chats instead of all chats
+                    fetchMyChats();
                 }
             }
         })
@@ -40,6 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let queuedChats = [];
     let selectedChatId = null;
     let currentTab = 'all';
+    let instances = []; // Add instances array
 
     const chatList = document.getElementById('chatList');
     const chatMessages = document.getElementById('chatMessages');
@@ -49,6 +73,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const takeChatBtn = document.getElementById('takeChatBtn');
     const transferBtn = document.getElementById('transferBtn');
     const startChatBtn = document.getElementById('startChatBtn');
+    const chatInputBox = document.getElementById('chatInputBox');
+    const chatInput = document.querySelector('.chat-input');
+    const chatSendBtn = document.querySelector('.chat-send-btn');
 
     // Debug: Check if buttons are found
     console.log('Button elements found:', {
@@ -67,8 +94,28 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.classList.add('active');
             currentTab = tab;
             
-            // Clear selection and load appropriate data
+            // Clear selection and hide buttons
             selectedChatId = null;
+            hideAllActionButtons();
+            
+            // Reset chat title
+            const chatTitle = chatHeader.querySelector('.chat-title');
+            if (chatTitle) {
+                chatTitle.textContent = 'Selecione um chat';
+            }
+            
+            // Hide message input
+            showMessageInput(false);
+            enableMessageInput(false); // Disable message input
+            
+            // Clear messages
+            chatMessages.innerHTML = `
+                <div class="empty-state">
+                    <i class="fab fa-whatsapp"></i>
+                    <p>Selecione uma conversa para ver as mensagens</p>
+                </div>
+            `;
+            
             if (tab === 'all') {
                 fetchChats();
             } else if (tab === 'queue') {
@@ -115,6 +162,167 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Erro ao assumir chat');
             });
         });
+    }
+
+    // Transfer Chat functionality
+    if (transferBtn) {
+        transferBtn.addEventListener('click', function() {
+            if (!selectedChatId) return;
+            
+            // Show transfer modal
+            const transferModal = document.getElementById('transferModal');
+            if (transferModal) {
+                transferModal.style.display = 'flex';
+                
+                // Load users for transfer
+                fetch('/api/users', { credentials: 'include' })
+                    .then(res => res.json())
+                    .then(users => {
+                        const select = document.getElementById('transferAgent');
+                        if (select) {
+                            select.innerHTML = '<option value="">Selecione um usuário...</option>';
+                            users.forEach(user => {
+                                const option = document.createElement('option');
+                                option.value = user.username;
+                                option.textContent = user.username;
+                                select.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading users:', error);
+                        alert('Erro ao carregar usuários');
+                    });
+            }
+        });
+    }
+
+    // Start Chat functionality
+    if (startChatBtn) {
+        startChatBtn.addEventListener('click', function() {
+            if (!selectedChatId) return;
+            
+            fetch('/api/user-info', { credentials: 'include' })
+                .then(res => res.json())
+                .then(userData => {
+                    if (!userData || !userData.username) {
+                        throw new Error('User info not available');
+                    }
+                    
+                    return fetch('/api/chats/start', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            chatId: selectedChatId,
+                            agentId: userData.username
+                        })
+                    });
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Chat iniciado com sucesso!');
+                        // Refresh the current tab
+                        if (currentTab === 'all') {
+                            fetchChats();
+                        } else if (currentTab === 'queue') {
+                            fetchQueuedChats();
+                        } else if (currentTab === 'my') {
+                            fetchMyChats();
+                        }
+                    } else {
+                        alert('Erro ao iniciar chat: ' + (data.error || 'Erro desconhecido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error starting chat:', error);
+                    alert('Erro ao iniciar chat');
+                });
+        });
+    }
+
+    // Transfer modal functionality
+    const transferModal = document.getElementById('transferModal');
+    const transferModalClose = document.getElementById('transferModalClose');
+    const transferCancel = document.getElementById('transferCancel');
+    const transferConfirm = document.getElementById('transferConfirm');
+
+    if (transferModalClose) {
+        transferModalClose.addEventListener('click', () => {
+            transferModal.style.display = 'none';
+        });
+    }
+
+    if (transferCancel) {
+        transferCancel.addEventListener('click', () => {
+            transferModal.style.display = 'none';
+        });
+    }
+
+    // Close modal when clicking outside
+    if (transferModal) {
+        transferModal.addEventListener('click', (e) => {
+            if (e.target === transferModal) {
+                transferModal.style.display = 'none';
+            }
+        });
+    }
+
+    if (transferConfirm) {
+        transferConfirm.addEventListener('click', () => {
+            const select = document.getElementById('transferAgent');
+            const selectedUser = select ? select.value : '';
+            
+            if (!selectedUser) {
+                alert('Por favor, selecione um usuário');
+                return;
+            }
+            
+            fetch('/api/chats/transfer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    chatId: selectedChatId,
+                    agentId: selectedUser
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Chat transferido com sucesso!');
+                    transferModal.style.display = 'none';
+                    // Refresh the current tab
+                    if (currentTab === 'all') {
+                        fetchChats();
+                    } else if (currentTab === 'queue') {
+                        fetchQueuedChats();
+                    } else if (currentTab === 'my') {
+                        fetchMyChats();
+                    }
+                } else {
+                    alert('Erro ao transferir chat: ' + (data.error || 'Erro desconhecido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error transferring chat:', error);
+                alert('Erro ao transferir chat');
+            });
+        });
+    }
+
+    // Function to hide all action buttons
+    function hideAllActionButtons() {
+        if (takeChatBtn) takeChatBtn.style.display = 'none';
+        if (transferBtn) transferBtn.style.display = 'none';
+        if (startChatBtn) startChatBtn.style.display = 'none';
+        if (document.getElementById('takeCallBtn')) document.getElementById('takeCallBtn').style.display = 'none';
+        if (document.getElementById('transferCallBtn')) document.getElementById('transferCallBtn').style.display = 'none';
     }
 
     function fetchChats() {
@@ -306,14 +514,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadMessages(chatId, chatName) {
         console.log('Loading messages for chat:', chatId, 'in tab:', currentTab);
         chatMessages.innerHTML = '<div class="empty-state">Carregando mensagens...</div>';
-        chatHeader.innerHTML = `<span class="chat-title">${chatName || chatId}</span>`;
-        showMessageInput(true);
         
-        // Show chat actions
-        const chatActions = document.getElementById('chatActions');
-        if (chatActions) {
-            chatActions.style.display = 'flex';
+        // Update only the chat title, not the entire header
+        const chatTitle = chatHeader.querySelector('.chat-title');
+        if (chatTitle) {
+            chatTitle.textContent = chatName || chatId;
         }
+        
+        showMessageInput(true);
+        enableMessageInput(true); // Enable message input
         
         // Find the selected chat to determine its situation
         let selectedChat = null;
@@ -416,9 +625,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Hide input box when no chat is selected
     showMessageInput(false);
+    enableMessageInput(false); // Disable message input initially
+    
+    // Hide all action buttons initially
+    hideAllActionButtons();
+    
+    // Set initial chat title
+    const chatTitle = chatHeader.querySelector('.chat-title');
+    if (chatTitle) {
+        chatTitle.textContent = 'Selecione um chat';
+    }
 
-    // Initial load
-    fetchChats();
+    // Initial load will be handled by the authentication check
+    // fetchChats() is called only for admin users, fetchMyChats() for regular users
 
     // Auto-refresh based on current tab
     setInterval(() => {
@@ -430,4 +649,89 @@ document.addEventListener('DOMContentLoaded', function() {
             fetchMyChats();
         }
     }, 30000);
+
+    // Load instances for message sending
+    function loadInstances() {
+        fetch('/api/instances', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.instances) {
+                    instances = data.instances.filter(instance => instance.is_active);
+                    console.log('Loaded instances:', instances);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading instances:', error);
+            });
+    }
+
+    // Load instances on page load
+    loadInstances();
+
+    // Message sending functionality
+    if (chatInputBox) {
+        chatInputBox.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = chatInput.value.trim();
+            if (!message || !selectedChatId) return;
+
+            // Get the first active instance (you might want to add instance selection UI)
+            const activeInstance = instances.find(instance => instance.is_active);
+            if (!activeInstance) {
+                alert('Nenhuma instância ativa encontrada. Por favor, conecte uma instância primeiro.');
+                return;
+            }
+
+            // Send message
+            fetch('/api/chats/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    chatId: selectedChatId,
+                    message: message,
+                    instanceId: activeInstance.instance_id
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Clear input
+                    chatInput.value = '';
+                    
+                    // Reload messages to show the new message
+                    loadMessages(selectedChatId, selectedChatId);
+                    
+                    // Refresh the current tab
+                    if (currentTab === 'all') {
+                        fetchChats();
+                    } else if (currentTab === 'queue') {
+                        fetchQueuedChats();
+                    } else if (currentTab === 'my') {
+                        fetchMyChats();
+                    }
+                } else {
+                    alert('Erro ao enviar mensagem: ' + (data.error || 'Erro desconhecido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                alert('Erro ao enviar mensagem');
+            });
+        });
+    }
+
+    // Enable/disable input based on chat selection
+    function enableMessageInput(enable) {
+        if (chatInput) {
+            chatInput.disabled = !enable;
+            chatInput.placeholder = enable ? 'Digite uma mensagem ou envie mídia...' : 'Selecione um chat para enviar mensagens';
+        }
+        if (chatSendBtn) {
+            chatSendBtn.disabled = !enable;
+        }
+    }
 }); 

@@ -18,10 +18,8 @@
                 <span>WaSolCRM</span>
             </div>
             <div class="nav-menu">
-                <a href="/" class="nav-link">Início</a>
-                <a href="#" class="nav-link">Recursos</a>
-                <a href="#" class="nav-link">Sobre</a>
-                <a href="#" class="nav-link">Contato</a>
+                <a href="/chats" class="nav-link active">Chats</a>
+                <a href="/instances" class="nav-link">Instâncias</a>
                 <a href="/logout" class="nav-btn">Sair</a>
             </div>
             <div class="hamburger">
@@ -48,23 +46,21 @@
         <main class="chat-main">
             <div class="chat-header" id="chatHeader">
                 <span class="chat-title">Selecione um chat</span>
-                <div class="chat-actions" id="chatActions" style="display:none;">
-                    <button class="action-btn" id="takeChatBtn" title="Pegar chat">
-                        <i class="fas fa-hand-paper"></i>
-                    </button>
-                    <button class="action-btn" id="transferBtn" title="Transferir chat">
-                        <i class="fas fa-exchange-alt"></i>
-                    </button>
-                    <button class="action-btn" id="startChatBtn" title="Iniciar chat">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="action-btn" id="takeCallBtn" title="Pegar chamado" style="display:none;">
-                        <i class="fas fa-hand-paper"></i>
-                    </button>
-                    <button class="action-btn" id="transferCallBtn" title="Transferir chamado" style="display:none;">
-                        <i class="fas fa-share"></i>
-                    </button>
-                </div>
+                <button class="action-btn" id="takeChatBtn" title="Pegar chat" style="display:none;">
+                    <i class="fas fa-hand-paper"></i>
+                </button>
+                <button class="action-btn" id="transferBtn" title="Transferir chat" style="display:none;">
+                    <i class="fas fa-exchange-alt"></i>
+                </button>
+                <button class="action-btn" id="startChatBtn" title="Iniciar chat" style="display:none;">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="action-btn" id="takeCallBtn" title="Pegar chamado" style="display:none;">
+                    <i class="fas fa-hand-paper"></i>
+                </button>
+                <button class="action-btn" id="transferCallBtn" title="Transferir chamado" style="display:none;">
+                    <i class="fas fa-share"></i>
+                </button>
             </div>
             <div class="chat-messages" id="chatMessages">
                 <div class="empty-state">
