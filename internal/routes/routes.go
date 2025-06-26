@@ -137,6 +137,14 @@ func Router() {
 		api.StartChatHandler(c.Writer, c.Request)
 	})
 
+	r.POST("/api/chats/close", func(c *gin.Context) {
+		api.CloseChatHandler(c.Writer, c.Request)
+	})
+
+	r.GET("/api/tabulations", func(c *gin.Context) {
+		api.GetTabulationsHandler(c.Writer, c.Request)
+	})
+
 	r.POST("/api/chats/take", func(c *gin.Context) {
 		api.TakeChatHandler(c.Writer, c.Request)
 	})

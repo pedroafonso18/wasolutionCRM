@@ -602,3 +602,85 @@ func getAllUsersFromDB(db *sql.DB) ([]map[string]interface{}, error) {
 	}
 	return users, nil
 }
+
+func CloseChatHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("CloseChatHandler called")
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+
+	var req struct {
+		ChatID     string `json:"chatId"`
+		Tabulation string `json:"tabulation"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("JSON decode error: %v", err)
+		http.Error(w, "Invalid request body", 400)
+		return
+	}
+
+	if req.ChatID == "" || req.Tabulation == "" {
+		http.Error(w, "Missing chatId or tabulation", 400)
+		return
+	}
+
+	cfg := config.LoadConfig()
+	rdb, err := waRedis.ConnectRedis(cfg.RedisUrl, cfg.RedisPassword)
+	if err != nil {
+		log.Printf("Redis connection error: %v", err)
+		http.Error(w, "Failed to connect to Redis", 500)
+		return
+	}
+	defer rdb.Close()
+
+	err = waRedis.CloseChat(rdb, req.ChatID, req.Tabulation)
+	if err != nil {
+		log.Printf("CloseChat error: %v", err)
+		http.Error(w, "Failed to close chat", 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"success": "Chat closed successfully"})
+}
+
+func GetTabulationsHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("GetTabulationsHandler called")
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+
+	cfg := config.LoadConfig()
+	db, err := database.OpenConn(cfg.DbUrl)
+	if err != nil {
+		log.Printf("Database connection error: %v", err)
+		http.Error(w, "Failed to connect to database", 500)
+		return
+	}
+	defer db.Close()
+
+	tabulations, err := database.GetTabulation(db)
+	if err != nil {
+		log.Printf("GetTabulation error: %v", err)
+		http.Error(w, "Failed to get tabulations", 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(tabulations)
+}

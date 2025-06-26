@@ -1,17 +1,17 @@
 package database
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"os"
 )
 
 func GetTabulation(db *sql.DB) ([]string, error) {
-	rows, err := db.Query(context.Background(), "SELECT tabulation_name FROM tabulations")
+	rows, err := db.Query("SELECT tabulation_name FROM tabulations")
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %v", err)
 	}
+	defer rows.Close()
 
 	var tabulations []string
 	for rows.Next() {

@@ -412,3 +412,56 @@ func AddMessage(rdb *redis.Client, chatID string, message Message) error {
 
 	return nil
 }
+
+func CloseChat(rdb *redis.Client, chatID, tabulation string) error {
+	ctx := context.Background()
+
+	chatKey := fmt.Sprintf("chat:%s", chatID)
+	chatJSON, err := rdb.LIndex(ctx, chatKey, 0).Result()
+	if err == redis.Nil {
+		return fmt.Errorf("chat %s not found", chatID)
+	} else if err != nil {
+		return fmt.Errorf("failed to fetch chat data for %s: %w", chatID, err)
+	}
+
+	var chat Chat
+	if err := json.Unmarshal([]byte(chatJSON), &chat); err != nil {
+		return fmt.Errorf("failed to decode chat data for %s: %w", chatID, err)
+	}
+
+	chat.Tabulation = &tabulation
+	chat.AgentID = nil
+	chat.Situation = "finished"
+	chat.IsActive = false
+
+	updatedChatJSON, err := json.Marshal(chat)
+	if err != nil {
+		return fmt.Errorf("failed to encode updated chat data: %w", err)
+	}
+
+	err = rdb.LSet(ctx, chatKey, 0, updatedChatJSON).Err()
+	if err != nil {
+		return fmt.Errorf("failed to update chat in Redis: %w", err)
+	}
+
+	UpdateMsg := Message{
+		ID:        fmt.Sprintf("finished_%d", time.Now().Unix()),
+		From:      "system",
+		To:        chatID,
+		Text:      fmt.Sprintf("Chat finalizado com tabulação: %s", tabulation),
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	takeMsgJSON, err := json.Marshal(UpdateMsg)
+	if err != nil {
+		return fmt.Errorf("failed to encode update message: %w", err)
+	}
+
+	msgKey := fmt.Sprintf("chat:%s:messages", chatID)
+	err = rdb.RPush(ctx, msgKey, takeMsgJSON).Err()
+	if err != nil {
+		return fmt.Errorf("failed to add finish message: %w", err)
+	}
+
+	return nil
+}

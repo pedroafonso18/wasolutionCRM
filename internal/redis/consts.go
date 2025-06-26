@@ -9,10 +9,11 @@ type Message struct {
 }
 
 type Chat struct {
-	ID        string  `json:"id"`
-	Situation string  `json:"situation"`
-	IsActive  bool    `json:"is_active"`
-	AgentID   *string `json:"agent_id"`
+	ID         string  `json:"id"`
+	Situation  string  `json:"situation"`
+	IsActive   bool    `json:"is_active"`
+	AgentID    *string `json:"agent_id"`
+	Tabulation *string `json:"tabulation"`
 }
 
 type ChatPreview struct {

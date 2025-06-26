@@ -55,6 +55,9 @@
                 <button class="action-btn" id="startChatBtn" title="Iniciar chat" style="display:none;">
                     <i class="fas fa-play"></i>
                 </button>
+                <button class="action-btn" id="closeChatBtn" title="Fechar chat" style="display:none;">
+                    <i class="fas fa-times-circle"></i>
+                </button>
                 <button class="action-btn" id="takeCallBtn" title="Pegar chamado" style="display:none;">
                     <i class="fas fa-hand-paper"></i>
                 </button>
@@ -93,6 +96,28 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="transferCancel">Cancelar</button>
                 <button class="btn btn-primary" id="transferConfirm">Transferir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Close Chat Modal -->
+    <div class="modal" id="closeChatModal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="closeChatModalTitle">Fechar Chat</h3>
+                <button class="modal-close" id="closeChatModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="closeChatTabulation">Selecione a tabulação:</label>
+                    <select id="closeChatTabulation" class="form-control">
+                        <option value="">Carregando tabulações...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeChatCancel">Cancelar</button>
+                <button class="btn btn-danger" id="closeChatConfirm">Fechar Chat</button>
             </div>
         </div>
     </div>

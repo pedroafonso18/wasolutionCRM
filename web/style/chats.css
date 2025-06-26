@@ -253,6 +253,26 @@ body {
     transform: translateY(-1px) !important;
 }
 
+#closeChatBtn {
+    background: #ff6b6b !important;
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-size: 1rem !important;
+}
+
+#closeChatBtn:hover {
+    background: #fa5252 !important;
+    transform: translateY(-1px) !important;
+}
+
 .chat-messages {
     flex: 1;
     padding: 2rem 1.5rem;

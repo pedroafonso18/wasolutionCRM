@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const takeChatBtn = document.getElementById('takeChatBtn');
     const transferBtn = document.getElementById('transferBtn');
     const startChatBtn = document.getElementById('startChatBtn');
+    const closeChatBtn = document.getElementById('closeChatBtn');
     const chatInputBox = document.getElementById('chatInputBox');
     const chatInput = document.querySelector('.chat-input');
     const chatSendBtn = document.querySelector('.chat-send-btn');
@@ -244,6 +245,87 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Close Chat functionality
+    if (closeChatBtn) {
+        closeChatBtn.addEventListener('click', function() {
+            if (!selectedChatId) return;
+            
+            // Show close chat modal
+            const closeChatModal = document.getElementById('closeChatModal');
+            if (closeChatModal) {
+                closeChatModal.style.display = 'flex';
+                
+                // Load tabulations
+                fetch('/api/tabulations', { credentials: 'include' })
+                    .then(res => res.json())
+                    .then(tabulations => {
+                        const select = document.getElementById('closeChatTabulation');
+                        if (select) {
+                            select.innerHTML = '<option value="">Selecione uma tabulação...</option>';
+                            tabulations.forEach(tabulation => {
+                                const option = document.createElement('option');
+                                option.value = tabulation;
+                                option.textContent = tabulation;
+                                select.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading tabulations:', error);
+                        alert('Erro ao carregar tabulações');
+                    });
+            }
+        });
+    }
+
+    // Take Call functionality
+    const takeCallBtn = document.getElementById('takeCallBtn');
+    if (takeCallBtn) {
+        takeCallBtn.addEventListener('click', function() {
+            if (!selectedChatId) return;
+            
+            fetch('/api/user-info', { credentials: 'include' })
+                .then(res => res.json())
+                .then(userData => {
+                    if (!userData || !userData.username) {
+                        throw new Error('User info not available');
+                    }
+                    
+                    return fetch('/api/chats/take', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            chatId: selectedChatId,
+                            agentId: userData.username
+                        })
+                    });
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Chamado assumido com sucesso!');
+                        // Refresh the current tab
+                        if (currentTab === 'all') {
+                            fetchChats();
+                        } else if (currentTab === 'queue') {
+                            fetchQueuedChats();
+                        } else if (currentTab === 'my') {
+                            fetchMyChats();
+                        }
+                    } else {
+                        alert('Erro ao assumir chamado: ' + (data.error || 'Erro desconhecido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error taking call:', error);
+                    alert('Erro ao assumir chamado');
+                });
+        });
+    }
+
     // Transfer modal functionality
     const transferModal = document.getElementById('transferModal');
     const transferModalClose = document.getElementById('transferModalClose');
@@ -267,6 +349,33 @@ document.addEventListener('DOMContentLoaded', function() {
         transferModal.addEventListener('click', (e) => {
             if (e.target === transferModal) {
                 transferModal.style.display = 'none';
+            }
+        });
+    }
+
+    // Close Chat modal functionality
+    const closeChatModal = document.getElementById('closeChatModal');
+    const closeChatModalClose = document.getElementById('closeChatModalClose');
+    const closeChatCancel = document.getElementById('closeChatCancel');
+    const closeChatConfirm = document.getElementById('closeChatConfirm');
+
+    if (closeChatModalClose) {
+        closeChatModalClose.addEventListener('click', () => {
+            closeChatModal.style.display = 'none';
+        });
+    }
+
+    if (closeChatCancel) {
+        closeChatCancel.addEventListener('click', () => {
+            closeChatModal.style.display = 'none';
+        });
+    }
+
+    // Close modal when clicking outside
+    if (closeChatModal) {
+        closeChatModal.addEventListener('click', (e) => {
+            if (e.target === closeChatModal) {
+                closeChatModal.style.display = 'none';
             }
         });
     }
@@ -316,12 +425,81 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    if (closeChatConfirm) {
+        closeChatConfirm.addEventListener('click', () => {
+            const select = document.getElementById('closeChatTabulation');
+            const selectedTabulation = select ? select.value : '';
+            
+            if (!selectedTabulation) {
+                alert('Por favor, selecione uma tabulação');
+                return;
+            }
+            
+            fetch('/api/chats/close', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    chatId: selectedChatId,
+                    tabulation: selectedTabulation
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Chat fechado com sucesso!');
+                    closeChatModal.style.display = 'none';
+                    
+                    // Clear selection and hide buttons
+                    selectedChatId = null;
+                    hideAllActionButtons();
+                    
+                    // Reset chat title
+                    const chatTitle = chatHeader.querySelector('.chat-title');
+                    if (chatTitle) {
+                        chatTitle.textContent = 'Selecione um chat';
+                    }
+                    
+                    // Hide message input
+                    showMessageInput(false);
+                    enableMessageInput(false);
+                    
+                    // Clear messages
+                    chatMessages.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fab fa-whatsapp"></i>
+                            <p>Selecione uma conversa para ver as mensagens</p>
+                        </div>
+                    `;
+                    
+                    // Refresh the current tab
+                    if (currentTab === 'all') {
+                        fetchChats();
+                    } else if (currentTab === 'queue') {
+                        fetchQueuedChats();
+                    } else if (currentTab === 'my') {
+                        fetchMyChats();
+                    }
+                } else {
+                    alert('Erro ao fechar chat: ' + (data.error || 'Erro desconhecido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error closing chat:', error);
+                alert('Erro ao fechar chat');
+            });
+        });
+    }
+
     // Function to hide all action buttons
     function hideAllActionButtons() {
         if (takeChatBtn) takeChatBtn.style.display = 'none';
         if (transferBtn) transferBtn.style.display = 'none';
         if (startChatBtn) startChatBtn.style.display = 'none';
-        if (document.getElementById('takeCallBtn')) document.getElementById('takeCallBtn').style.display = 'none';
+        if (closeChatBtn) closeChatBtn.style.display = 'none';
+        if (takeCallBtn) takeCallBtn.style.display = 'none';
         if (document.getElementById('transferCallBtn')) document.getElementById('transferCallBtn').style.display = 'none';
     }
 
@@ -573,6 +751,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     transferBtn.style.display = 'none';
                     console.log('Hiding Transfer button');
+                }
+            }
+            
+            // Show "Close Chat" button for active chats with agent
+            if (closeChatBtn) {
+                if (situation === 'active' && agentId) {
+                    closeChatBtn.style.display = 'inline-block';
+                    console.log('Showing Close Chat button');
+                } else {
+                    closeChatBtn.style.display = 'none';
+                    console.log('Hiding Close Chat button');
+                }
+            }
+            
+            // Show "Pegar chamado" button for queued chats or chats without agent
+            const takeCallBtn = document.getElementById('takeCallBtn');
+            if (takeCallBtn) {
+                if (situation === 'queued' || !agentId) {
+                    takeCallBtn.style.display = 'inline-block';
+                    console.log('Showing Take Call button');
+                } else {
+                    takeCallBtn.style.display = 'none';
+                    console.log('Hiding Take Call button');
                 }
             }
         }
