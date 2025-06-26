@@ -49,6 +49,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const createInstanceForm = document.getElementById('createInstanceForm');
     const qrCodeImage = document.getElementById('qrCodeImage');
 
+    // Debug modal elements
+    console.log('Modal elements found:');
+    console.log('createInstanceModal:', createInstanceModal);
+    console.log('qrCodeModal:', qrCodeModal);
+    console.log('webhookModal:', webhookModal);
+    console.log('createInstanceBtn:', createInstanceBtn);
+    console.log('createInstanceForm:', createInstanceForm);
+    console.log('qrCodeImage:', qrCodeImage);
+
+    // Add event listeners to QR code image for debugging
+    if (qrCodeImage) {
+        qrCodeImage.addEventListener('load', () => {
+            console.log('QR code image loaded successfully');
+            console.log('Image dimensions:', qrCodeImage.naturalWidth, 'x', qrCodeImage.naturalHeight);
+        });
+        
+        qrCodeImage.addEventListener('error', (e) => {
+            console.error('QR code image failed to load:', e);
+        });
+    }
+
+    // Test function to manually show QR modal
+    window.testQRModal = function() {
+        console.log('Testing QR modal...');
+        if (qrCodeModal) {
+            qrCodeModal.style.display = 'flex';
+            console.log('QR modal display set to:', qrCodeModal.style.display);
+            console.log('QR modal computed style:', window.getComputedStyle(qrCodeModal).display);
+        } else {
+            console.error('QR modal not found!');
+        }
+    };
+
     // Create instance button
     if (createInstanceBtn) {
         createInstanceBtn.addEventListener('click', () => {
@@ -132,27 +165,77 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(res => res.json())
             .then(response => {
                 console.log('Create instance response:', response);
+                console.log('Response type:', typeof response);
+                console.log('Response keys:', Object.keys(response));
                 
-                // Check if response contains QR code
-                if (response.qrcode && response.qrcode.base64) {
-                    // Show QR code modal
-                    qrCodeImage.src = `data:image/png;base64,${response.qrcode.base64}`;
-                    qrCodeModal.style.display = 'flex';
-                } else if (response.data && response.data.QRCode) {
-                    // Alternative QR code format
-                    qrCodeImage.src = `data:image/png;base64,${response.data.QRCode}`;
-                    qrCodeModal.style.display = 'flex';
-                }
-                
+                // Close the create instance modal first
                 createInstanceModal.style.display = 'none';
                 createInstanceForm.reset();
-                loadInstances(); // Refresh instances list
                 
-                if (response.success !== false) {
-                    showNotification('Instância criada com sucesso!', 'success');
+                // Check if response contains QR code and show it
+                if (response.qrcode && response.qrcode.base64) {
+                    console.log('Found QR code in response.qrcode.base64');
+                    console.log('QR code length:', response.qrcode.base64.length);
+                    console.log('QR code starts with data:', response.qrcode.base64.startsWith('data:'));
+                    
+                    // Show QR code modal with the base64 image
+                    // Check if the base64 already includes the data URL prefix
+                    const base64Data = response.qrcode.base64.startsWith('data:') 
+                        ? response.qrcode.base64 
+                        : `data:image/png;base64,${response.qrcode.base64}`;
+                    
+                    console.log('Final base64Data length:', base64Data.length);
+                    console.log('Setting QR code image src...');
+                    
+                    qrCodeImage.src = base64Data;
+                    console.log('QR code image src set to:', qrCodeImage.src.substring(0, 100) + '...');
+                    
+                    console.log('Showing QR modal...');
+                    qrCodeModal.style.display = 'flex';
+                    console.log('QR modal display style:', qrCodeModal.style.display);
+                    
+                    showNotification('Instância criada com sucesso! Escaneie o QR Code para conectar.', 'success');
+                } else if (response.status_string && response.status_string.qrcode && response.status_string.qrcode.base64) {
+                    console.log('Found QR code in response.status_string.qrcode.base64');
+                    console.log('QR code length:', response.status_string.qrcode.base64.length);
+                    console.log('QR code starts with data:', response.status_string.qrcode.base64.startsWith('data:'));
+                    
+                    // Show QR code modal with the base64 image
+                    const base64Data = response.status_string.qrcode.base64.startsWith('data:') 
+                        ? response.status_string.qrcode.base64 
+                        : `data:image/png;base64,${response.status_string.qrcode.base64}`;
+                    
+                    console.log('Final base64Data length:', base64Data.length);
+                    console.log('Setting QR code image src...');
+                    
+                    qrCodeImage.src = base64Data;
+                    console.log('QR code image src set to:', qrCodeImage.src.substring(0, 100) + '...');
+                    
+                    console.log('Showing QR modal...');
+                    qrCodeModal.style.display = 'flex';
+                    console.log('QR modal display style:', qrCodeModal.style.display);
+                    
+                    showNotification('Instância criada com sucesso! Escaneie o QR Code para conectar.', 'success');
+                } else if (response.data && response.data.QRCode) {
+                    console.log('Found QR code in response.data.QRCode');
+                    // Alternative QR code format
+                    const base64Data = response.data.QRCode.startsWith('data:') 
+                        ? response.data.QRCode 
+                        : `data:image/png;base64,${response.data.QRCode}`;
+                    qrCodeImage.src = base64Data;
+                    qrCodeModal.style.display = 'flex';
+                    showNotification('Instância criada com sucesso! Escaneie o QR Code para conectar.', 'success');
                 } else {
-                    showNotification('Erro ao criar instância: ' + (response.error || 'Erro desconhecido'), 'error');
+                    console.log('No QR code found in response');
+                    console.log('Available keys in response:', Object.keys(response));
+                    if (response.status_string) {
+                        console.log('Available keys in status_string:', Object.keys(response.status_string));
+                    }
+                    // No QR code in response, just show success message
+                    showNotification('Instância criada com sucesso!', 'success');
                 }
+                
+                loadInstances(); // Refresh instances list
             })
             .catch(error => {
                 console.error('Error creating instance:', error);
@@ -476,22 +559,37 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => {
             console.log('Connect instance response:', response);
             
-            // Check if response contains QR code
+            // Check if response contains QR code and show it
             if (response.base64) {
-                qrCodeImage.src = `data:image/png;base64,${response.base64}`;
+                // Direct base64 response
+                const base64Data = response.base64.startsWith('data:') 
+                    ? response.base64 
+                    : `data:image/png;base64,${response.base64}`;
+                qrCodeImage.src = base64Data;
                 qrCodeModal.style.display = 'flex';
+                showNotification('QR Code gerado! Escaneie para conectar a instância.', 'success');
             } else if (response.data && response.data.QRCode) {
-                qrCodeImage.src = `data:image/png;base64,${response.data.QRCode}`;
+                // QR code in data.QRCode field
+                const base64Data = response.data.QRCode.startsWith('data:') 
+                    ? response.data.QRCode 
+                    : `data:image/png;base64,${response.data.QRCode}`;
+                qrCodeImage.src = base64Data;
                 qrCodeModal.style.display = 'flex';
+                showNotification('QR Code gerado! Escaneie para conectar a instância.', 'success');
+            } else if (response.qrcode && response.qrcode.base64) {
+                // QR code in qrcode.base64 field (same as create instance)
+                const base64Data = response.qrcode.base64.startsWith('data:') 
+                    ? response.qrcode.base64 
+                    : `data:image/png;base64,${response.qrcode.base64}`;
+                qrCodeImage.src = base64Data;
+                qrCodeModal.style.display = 'flex';
+                showNotification('QR Code gerado! Escaneie para conectar a instância.', 'success');
+            } else {
+                // No QR code in response
+                showNotification('Solicitação de conexão enviada!', 'success');
             }
             
             loadInstances(); // Refresh instances list
-            
-            if (response.success !== false) {
-                showNotification('Solicitação de conexão enviada! Verifique o QR Code.', 'success');
-            } else {
-                showNotification('Erro ao conectar instância: ' + (response.error || 'Erro desconhecido'), 'error');
-            }
         })
         .catch(error => {
             console.error('Error connecting instance:', error);
