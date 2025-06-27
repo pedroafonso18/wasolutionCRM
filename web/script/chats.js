@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedChatId = null;
     let currentTab = 'all';
     let instances = []; // Add instances array
+    let contacts = [];
 
     const chatList = document.getElementById('chatList');
     const chatMessages = document.getElementById('chatMessages');
@@ -77,6 +78,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatInputBox = document.getElementById('chatInputBox');
     const chatInput = document.querySelector('.chat-input');
     const chatSendBtn = document.querySelector('.chat-send-btn');
+
+    const takeCallBtn = document.getElementById('takeCallBtn');
+    const transferCallBtn = document.getElementById('transferCallBtn');
+    const chatDetailsBtn = document.getElementById('chatDetailsBtn');
+    const chatDetailsSidebar = document.getElementById('chatDetailsSidebar');
+    const chatDetailsContent = document.getElementById('chatDetailsContent');
+    const closeDetailsBtn = document.getElementById('closeDetailsBtn');
 
     // Debug: Check if buttons are found
     console.log('Button elements found:', {
@@ -122,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (tab === 'queue') {
                 fetchQueuedChats();
             } else if (tab === 'my') {
+                currentTab = 'my';
                 fetchMyChats();
             }
         });
@@ -199,51 +208,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Start Chat functionality
-    if (startChatBtn) {
-        startChatBtn.addEventListener('click', function() {
-            if (!selectedChatId) return;
-            
-            fetch('/api/user-info', { credentials: 'include' })
-                .then(res => res.json())
-                .then(userData => {
-                    if (!userData || !userData.username) {
-                        throw new Error('User info not available');
-                    }
-                    
-                    return fetch('/api/chats/start', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        credentials: 'include',
-                        body: JSON.stringify({
-                            chatId: selectedChatId,
-                            agentId: userData.username
-                        })
-                    });
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Chat iniciado com sucesso!');
-                        // Refresh the current tab
-                        if (currentTab === 'all') {
-                            fetchChats();
-                        } else if (currentTab === 'queue') {
-                            fetchQueuedChats();
-                        } else if (currentTab === 'my') {
-                            fetchMyChats();
-                        }
-                    } else {
-                        alert('Erro ao iniciar chat: ' + (data.error || 'Erro desconhecido'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error starting chat:', error);
-                    alert('Erro ao iniciar chat');
-                });
-        });
-    }
 
     // Close Chat functionality
     if (closeChatBtn) {
@@ -279,7 +243,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Take Call functionality
-    const takeCallBtn = document.getElementById('takeCallBtn');
     if (takeCallBtn) {
         takeCallBtn.addEventListener('click', function() {
             if (!selectedChatId) return;
@@ -323,6 +286,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Error taking call:', error);
                     alert('Erro ao assumir chamado');
                 });
+        });
+    }
+
+    // Chat Details functionality
+    if (chatDetailsBtn) {
+        chatDetailsBtn.addEventListener('click', function() {
+            if (!selectedChatId) return;
+            loadChatDetails(selectedChatId);
+            chatDetailsSidebar.style.display = 'flex';
+        });
+    }
+
+    // Close Details functionality
+    if (closeDetailsBtn) {
+        closeDetailsBtn.addEventListener('click', function() {
+            chatDetailsSidebar.style.display = 'none';
         });
     }
 
@@ -500,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (startChatBtn) startChatBtn.style.display = 'none';
         if (closeChatBtn) closeChatBtn.style.display = 'none';
         if (takeCallBtn) takeCallBtn.style.display = 'none';
-        if (document.getElementById('transferCallBtn')) document.getElementById('transferCallBtn').style.display = 'none';
+        if (transferCallBtn) transferCallBtn.style.display = 'none';
     }
 
     function fetchChats() {
@@ -586,7 +565,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.warn('Unexpected data format:', data);
                     chats = [];
                 }
-                renderChatList();
+                renderMyChatsList();
             })
             .catch(error => {
                 console.error('Error fetching my chats:', error);
@@ -599,53 +578,43 @@ document.addEventListener('DOMContentLoaded', function() {
             chatList.innerHTML = '<li style="text-align:center; padding:2rem; color:var(--text-light);">Nenhuma conversa encontrada</li>';
             return;
         }
-        chatList.innerHTML = '';
-        chats.forEach(chat => {
-            if (!chat) return;
-            
-            const chatId = chat.id || 'Unknown';
+        chatList.innerHTML = chats.map(chat => {
             const lastMsg = chat.last_message || {};
-            const situation = chat.situation || 'unknown';
-            const isActive = chat.is_active || false;
-            const agentId = chat.agent_id || null;
+            const isSelected = chat.id === selectedChatId ? 'selected' : '';
+            const statusClass = chat.situation === 'active' ? 'active' : 'inactive';
+            const agentText = chat.agent_id ? `Agente: ${chat.agent_id}` : 'Sem agente';
             
-            const li = document.createElement('li');
-            li.className = (chatId === selectedChatId) ? 'active' : '';
-            
-            let avatarColor = 'var(--primary-color)';
-            let avatarIcon = 'fab fa-whatsapp';
-            
-            if (situation === 'queued') {
-                avatarColor = '#ff6b6b';
-                avatarIcon = 'fas fa-clock';
-            } else if (situation === 'active') {
-                avatarColor = '#51cf66';
-                avatarIcon = 'fas fa-user-check';
-            } else if (situation === 'closed') {
-                avatarColor = '#868e96';
-                avatarIcon = 'fas fa-times';
-            }
-            
-            li.innerHTML = `
-                <div class="chat-avatar" style="background: ${avatarColor};">
-                    <i class="${avatarIcon}"></i>
-                </div>
-                <div class="chat-info">
-                    <div class="chat-name">${chatId}</div>
-                    <div class="chat-last">${lastMsg.text || ''}</div>
-                    <div class="chat-status" style="font-size: 0.8rem; color: var(--text-light);">
-                        ${situation} ${isActive ? '• Ativo' : '• Inativo'} ${agentId ? `• Agente: ${agentId}` : ''}
+            return `
+                <li class="${isSelected} ${statusClass}" data-chat-id="${chat.id}">
+                    <div class="chat-avatar">
+                        <i class="fab fa-whatsapp"></i>
                     </div>
-                </div>
+                    <div class="chat-info">
+                        <div class="chat-name">${getChatDisplayName(chat)}</div>
+                        <div class="chat-last">${lastMsg.text || ''}</div>
+                        <div class="chat-status" style="font-size: 0.8rem; color: var(--text-light);">
+                            ${agentText}
+                        </div>
+                    </div>
+                </li>
             `;
-            li.addEventListener('click', () => {
-                if (selectedChatId !== chatId) {
-                    selectedChatId = chatId;
-                    renderChatList();
-                    loadMessages(chatId, chatId);
-                }
+        }).join('');
+
+        // Add click handlers
+        chatList.querySelectorAll('li').forEach(li => {
+            li.addEventListener('click', function() {
+                const chatId = this.dataset.chatId;
+                const chat = chats.find(c => c.id === chatId);
+                selectedChatId = chatId;
+                
+                // Update selected state
+                chatList.querySelectorAll('li').forEach(item => item.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                // Load messages with display name
+                const displayName = chat ? getChatDisplayName(chat) : chatId;
+                loadMessages(chatId, displayName);
             });
-            chatList.appendChild(li);
         });
     }
 
@@ -654,38 +623,91 @@ document.addEventListener('DOMContentLoaded', function() {
             chatList.innerHTML = '<li style="text-align:center; padding:2rem; color:var(--text-light);">Nenhum chat na fila</li>';
             return;
         }
-        chatList.innerHTML = '';
-        queuedChats.forEach(chat => {
-            if (!chat) return;
-            
-            const chatId = chat.id || 'Unknown';
+        chatList.innerHTML = queuedChats.map(chat => {
             const lastMsg = chat.last_message || {};
-            const situation = chat.situation || 'unknown';
-            const isActive = chat.is_active || false;
-            const agentId = chat.agent_id || null;
+            const isSelected = chat.id === selectedChatId ? 'selected' : '';
+            const statusClass = chat.situation === 'active' ? 'active' : 'inactive';
+            const agentText = chat.agent_id ? `Agente: ${chat.agent_id}` : 'Sem agente';
             
-            const li = document.createElement('li');
-            li.className = (chatId === selectedChatId) ? 'active' : '';
-            li.innerHTML = `
-                <div class="chat-avatar" style="background: #ff6b6b;">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="chat-info">
-                    <div class="chat-name">${chatId}</div>
-                    <div class="chat-last">${lastMsg.text || 'Aguardando atendimento...'}</div>
-                    <div class="chat-status" style="font-size: 0.8rem; color: var(--text-light);">
-                        ${situation} ${isActive ? '• Ativo' : '• Inativo'} ${agentId ? `• Agente: ${agentId}` : ''}
+            return `
+                <li class="${isSelected} ${statusClass}" data-chat-id="${chat.id}">
+                    <div class="chat-avatar">
+                        <i class="fas fa-clock"></i>
                     </div>
-                </div>
+                    <div class="chat-info">
+                        <div class="chat-name">${getChatDisplayName(chat)}</div>
+                        <div class="chat-last">${lastMsg.text || 'Aguardando atendimento...'}</div>
+                        <div class="chat-status" style="font-size: 0.8rem; color: var(--text-light);">
+                            ${agentText}
+                        </div>
+                    </div>
+                </li>
             `;
-            li.addEventListener('click', () => {
-                if (selectedChatId !== chatId) {
-                    selectedChatId = chatId;
-                    renderQueueList();
-                    loadMessages(chatId, chatId);
-                }
+        }).join('');
+
+        // Add click handlers
+        chatList.querySelectorAll('li').forEach(li => {
+            li.addEventListener('click', function() {
+                const chatId = this.dataset.chatId;
+                const chat = queuedChats.find(c => c.id === chatId);
+                selectedChatId = chatId;
+                
+                // Update selected state
+                chatList.querySelectorAll('li').forEach(item => item.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                // Load messages with display name
+                const displayName = chat ? getChatDisplayName(chat) : chatId;
+                loadMessages(chatId, displayName);
             });
-            chatList.appendChild(li);
+        });
+    }
+
+    function renderMyChatsList() {
+        if (!chatList) return;
+        
+        if (!chats || chats.length === 0) {
+            chatList.innerHTML = '<li class="empty-state">Nenhum chat encontrado</li>';
+            return;
+        }
+        
+        chatList.innerHTML = chats.map(chat => {
+            const lastMsg = chat.last_message || {};
+            const isSelected = chat.id === selectedChatId ? 'selected' : '';
+            const statusClass = chat.situation === 'active' ? 'active' : 'inactive';
+            const agentText = chat.agent_id ? `Agente: ${chat.agent_id}` : 'Sem agente';
+            
+            return `
+                <li class="${isSelected} ${statusClass}" data-chat-id="${chat.id}">
+                    <div class="chat-avatar">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-name">${getChatDisplayName(chat)}</div>
+                        <div class="chat-last">${lastMsg.text || ''}</div>
+                        <div class="chat-status" style="font-size: 0.8rem; color: var(--text-light);">
+                            ${agentText}
+                        </div>
+                    </div>
+                </li>
+            `;
+        }).join('');
+
+        // Add click handlers
+        chatList.querySelectorAll('li').forEach(li => {
+            li.addEventListener('click', function() {
+                const chatId = this.dataset.chatId;
+                const chat = chats.find(c => c.id === chatId);
+                selectedChatId = chatId;
+                
+                // Update selected state
+                chatList.querySelectorAll('li').forEach(item => item.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                // Load messages with display name
+                const displayName = chat ? getChatDisplayName(chat) : chatId;
+                loadMessages(chatId, displayName);
+            });
         });
     }
 
@@ -693,16 +715,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Loading messages for chat:', chatId, 'in tab:', currentTab);
         chatMessages.innerHTML = '<div class="empty-state">Carregando mensagens...</div>';
         
-        // Update only the chat title, not the entire header
-        const chatTitle = chatHeader.querySelector('.chat-title');
-        if (chatTitle) {
-            chatTitle.textContent = chatName || chatId;
-        }
-        
-        showMessageInput(true);
-        enableMessageInput(true); // Enable message input
-        
-        // Find the selected chat to determine its situation
+        // Find the selected chat to get its display name
         let selectedChat = null;
         if (currentTab === 'all') {
             selectedChat = chats.find(chat => chat.id === chatId);
@@ -712,7 +725,22 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedChat = chats.find(chat => chat.id === chatId);
         }
         
-        console.log('Selected chat:', selectedChat);
+        // Use contact name if available, otherwise use provided name or chat ID
+        let displayName = chatId;
+        if (selectedChat) {
+            displayName = getChatDisplayName(selectedChat);
+        } else if (chatName) {
+            displayName = chatName;
+        }
+        
+        // Update only the chat title, not the entire header
+        const chatTitle = chatHeader.querySelector('.chat-title');
+        if (chatTitle) {
+            chatTitle.textContent = displayName;
+        }
+        
+        showMessageInput(true);
+        enableMessageInput(true); // Enable message input
         
         // Show/hide buttons based on chat situation
         if (selectedChat) {
@@ -766,7 +794,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Show "Pegar chamado" button for queued chats or chats without agent
-            const takeCallBtn = document.getElementById('takeCallBtn');
             if (takeCallBtn) {
                 if (situation === 'queued' || !agentId) {
                     takeCallBtn.style.display = 'inline-block';
@@ -775,6 +802,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     takeCallBtn.style.display = 'none';
                     console.log('Hiding Take Call button');
                 }
+            }
+
+            // Show "Chat Details" button for all chats
+            if (chatDetailsBtn) {
+                chatDetailsBtn.style.display = 'inline-block';
             }
         }
         
@@ -869,6 +901,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load instances on page load
     loadInstances();
 
+    // Load contacts on page load
+    loadContacts();
+
     // Message sending functionality
     if (chatInputBox) {
         chatInputBox.addEventListener('submit', function(e) {
@@ -934,5 +969,123 @@ document.addEventListener('DOMContentLoaded', function() {
         if (chatSendBtn) {
             chatSendBtn.disabled = !enable;
         }
+    }
+
+    // Load chat details
+    function loadChatDetails(chatId) {
+        if (!chatDetailsContent) return;
+
+        chatDetailsContent.innerHTML = '<div class="loading">Carregando detalhes...</div>';
+
+        fetch(`/api/chats/${encodeURIComponent(chatId)}/details`, { credentials: 'include' })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                console.log('Chat details received:', data);
+                renderChatDetails(data);
+            })
+            .catch(error => {
+                console.error('Error loading chat details:', error);
+                chatDetailsContent.innerHTML = '<div class="error">Erro ao carregar detalhes do chat</div>';
+            });
+    }
+
+    // Render chat details
+    function renderChatDetails(data) {
+        if (!chatDetailsContent) return;
+
+        let contactHtml = '';
+        if (data.contact) {
+            contactHtml = `
+                <div class="chat-detail-contact">
+                    <div class="chat-detail-contact-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="chat-detail-contact-info">
+                        <h4>${escapeHtml(data.contact.name)}</h4>
+                        <p>${escapeHtml(data.contact.number)}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        chatDetailsContent.innerHTML = `
+            ${contactHtml}
+            <div class="chat-detail-item">
+                <div class="chat-detail-label">ID do Chat</div>
+                <div class="chat-detail-value">${escapeHtml(data.chatId)}</div>
+            </div>
+            <div class="chat-detail-item">
+                <div class="chat-detail-label">Número</div>
+                <div class="chat-detail-value">${escapeHtml(data.number || 'N/A')}</div>
+            </div>
+            <div class="chat-detail-item">
+                <div class="chat-detail-label">Situação</div>
+                <div class="chat-detail-value">${escapeHtml(data.situation || 'N/A')}</div>
+            </div>
+            <div class="chat-detail-item">
+                <div class="chat-detail-label">Status</div>
+                <div class="chat-detail-value">${data.isActive ? 'Ativo' : 'Inativo'}</div>
+            </div>
+            <div class="chat-detail-item">
+                <div class="chat-detail-label">Agente</div>
+                <div class="chat-detail-value">${data.agentId ? escapeHtml(data.agentId) : 'Não atribuído'}</div>
+            </div>
+            <div class="chat-detail-item">
+                <div class="chat-detail-label">Instância</div>
+                <div class="chat-detail-value">${data.instanceId ? escapeHtml(data.instanceId) : 'N/A'}</div>
+            </div>
+            <div class="chat-detail-item">
+                <div class="chat-detail-label">Tabulação</div>
+                <div class="chat-detail-value">${data.tabulation ? escapeHtml(data.tabulation) : 'N/A'}</div>
+            </div>
+        `;
+    }
+
+    // Utility function to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Load contacts for display names
+    function loadContacts() {
+        fetch('/api/contacts', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success && data.contacts) {
+                    contacts = data.contacts;
+                    console.log('Loaded contacts:', contacts);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading contacts:', error);
+            });
+    }
+
+    // Get contact name by phone number
+    function getContactName(phoneNumber) {
+        if (!contacts || !phoneNumber) return null;
+        const contact = contacts.find(c => c.number === phoneNumber);
+        return contact ? contact.name : null;
+    }
+
+    // Get display name for chat
+    function getChatDisplayName(chat) {
+        // First try to get contact name by phone number
+        if (chat.number) {
+            const contactName = getContactName(chat.number);
+            if (contactName) {
+                return contactName;
+            }
+        }
+        
+        // Fallback to chat ID
+        return chat.id;
     }
 }); 

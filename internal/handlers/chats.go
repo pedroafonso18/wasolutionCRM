@@ -6,15 +6,18 @@ import (
 	"WaSolCRM/internal/database"
 	"WaSolCRM/internal/rabbit"
 	waRedis "WaSolCRM/internal/redis"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 )
 
 func GetChatsHandler(w http.ResponseWriter, r *http.Request) {
@@ -306,8 +309,8 @@ func StartChatHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		ChatID  string `json:"chatId"`
-		AgentID string `json:"agentId"`
+		InstanceID string `json:"instanceId"`
+		ContactID  string `json:"contactId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -316,10 +319,20 @@ func StartChatHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ChatID == "" || req.AgentID == "" {
-		http.Error(w, "Missing chatId or agentId", 400)
+	if req.InstanceID == "" || req.ContactID == "" {
+		http.Error(w, "Missing required fields", 400)
 		return
 	}
+
+	// Get current user
+	user, err := getUserFromToken(r)
+	if err != nil {
+		log.Printf("Error getting user from token: %v", err)
+		http.Error(w, "Unauthorized", 401)
+		return
+	}
+
+	agentID := user["username"].(string)
 
 	cfg := config.LoadConfig()
 	rdb, err := waRedis.ConnectRedis(cfg.RedisUrl, cfg.RedisPassword)
@@ -328,23 +341,44 @@ func StartChatHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to connect to Redis", 500)
 		return
 	}
+	defer rdb.Close()
 
-	err = waRedis.StartChat(rdb, req.ChatID, req.AgentID)
+	contact, err := waRedis.GetContact(rdb, req.ContactID)
 	if err != nil {
-		log.Printf("StartChat error: %v", err)
-		http.Error(w, "Failed to start chat", 500)
+		log.Printf("Failed to get contact: %v", err)
+		http.Error(w, "Contact not found", 404)
 		return
 	}
 
-	log.Printf("Successfully started chat %s with agent %s", req.ChatID, req.AgentID)
+	chatID := fmt.Sprintf("chat_%d", time.Now().UnixNano())
+	chat := waRedis.Chat{
+		ID:         chatID,
+		Situation:  "active",
+		IsActive:   true,
+		AgentID:    &agentID,
+		Tabulation: nil,
+		InstanceID: &req.InstanceID,
+		Number:     contact.Number,
+	}
+
+	err = waRedis.AddChat(rdb, chat)
+	if err != nil {
+		log.Printf("Failed to create chat: %v", err)
+		http.Error(w, "Failed to create chat", 500)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"success": "Chat started successfully"})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Chat started successfully",
+		"chatId":  chatID,
+		"contact": contact,
+	})
 }
 
 func TakeChatHandler(w http.ResponseWriter, r *http.Request) {
@@ -414,9 +448,8 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		ChatID     string `json:"chatId"`
-		Message    string `json:"message"`
-		InstanceID string `json:"instanceId"`
+		ChatID  string `json:"chatId"`
+		Message string `json:"message"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -425,8 +458,8 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ChatID == "" || req.Message == "" || req.InstanceID == "" {
-		http.Error(w, "Missing chatId, message, or instanceId", 400)
+	if req.ChatID == "" || req.Message == "" {
+		http.Error(w, "Missing chatId or message", 400)
 		return
 	}
 
@@ -440,6 +473,44 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	agentID := user["username"].(string)
 
 	cfg := config.LoadConfig()
+	rdb, err := waRedis.ConnectRedis(cfg.RedisUrl, cfg.RedisPassword)
+	if err != nil {
+		log.Printf("Redis connection error: %v", err)
+		http.Error(w, "Failed to connect to Redis", 500)
+		return
+	}
+
+	chatKey := fmt.Sprintf("chat:%s", req.ChatID)
+	chatJSON, err := rdb.LIndex(context.Background(), chatKey, 0).Result()
+	if err == redis.Nil {
+		log.Printf("Chat %s not found", req.ChatID)
+		http.Error(w, "Chat not found", 404)
+		return
+	} else if err != nil {
+		log.Printf("Failed to fetch chat data: %v", err)
+		http.Error(w, "Failed to fetch chat data", 500)
+		return
+	}
+
+	var chat waRedis.Chat
+	if err := json.Unmarshal([]byte(chatJSON), &chat); err != nil {
+		log.Printf("Failed to decode chat data: %v", err)
+		http.Error(w, "Failed to decode chat data", 500)
+		return
+	}
+
+	if chat.InstanceID == nil || *chat.InstanceID == "" {
+		log.Printf("No instance ID found for chat %s", req.ChatID)
+		http.Error(w, "No instance associated with this chat", 400)
+		return
+	}
+
+	contactNumber := chat.Number
+	if contactNumber == "" {
+		log.Printf("No contact number found for chat %s", req.ChatID)
+		http.Error(w, "No contact number associated with this chat", 400)
+		return
+	}
 
 	ch, err := rabbit.ConnectRabbit(cfg.RabbitMQ)
 	if err != nil {
@@ -451,14 +522,14 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	wasolParams := api.WaSolParams{
 		Token: cfg.WaSolKey,
-		Url:   "https://api.wasolution.com.br",
+		Url:   cfg.WaSolUrl,
 	}
 
 	message := api.Message{
-		InstanceId: req.InstanceID,
-		Number:     req.ChatID,
+		InstanceId: *chat.InstanceID,
+		Number:     contactNumber,
 		Body:       req.Message,
-		Type:       "text",
+		Type:       "TEXT",
 	}
 
 	detailedRequest := api.SendMessage(wasolParams, message)
@@ -467,13 +538,6 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("SendToQueue error: %v", err)
 		http.Error(w, "Failed to queue message", 500)
-		return
-	}
-
-	rdb, err := waRedis.ConnectRedis(cfg.RedisUrl, cfg.RedisPassword)
-	if err != nil {
-		log.Printf("Redis connection error: %v", err)
-		http.Error(w, "Failed to connect to Redis", 500)
 		return
 	}
 
@@ -492,7 +556,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Successfully queued message for chat %s by agent %s", req.ChatID, agentID)
+	log.Printf("Successfully queued message for chat %s by agent %s using instance %s to number %s", req.ChatID, agentID, *chat.InstanceID, contactNumber)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -683,4 +747,232 @@ func GetTabulationsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(tabulations)
+}
+
+func GetChatDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("GetChatDetailsHandler called")
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+
+	pathParts := strings.Split(r.URL.Path, "/")
+	var chatID string
+	for i, part := range pathParts {
+		if part == "chats" && i+1 < len(pathParts) {
+			chatID = pathParts[i+1]
+			break
+		}
+	}
+
+	if chatID == "" {
+		log.Println("Missing chatID parameter")
+		http.Error(w, "Missing chatID", 400)
+		return
+	}
+
+	cfg := config.LoadConfig()
+	rdb, err := waRedis.ConnectRedis(cfg.RedisUrl, cfg.RedisPassword)
+	if err != nil {
+		log.Printf("Redis connection error: %v", err)
+		http.Error(w, "Failed to connect to Redis", 500)
+		return
+	}
+	defer rdb.Close()
+
+	chatKey := fmt.Sprintf("chat:%s", chatID)
+	chatJSON, err := rdb.LIndex(context.Background(), chatKey, 0).Result()
+	if err == redis.Nil {
+		log.Printf("Chat %s not found", chatID)
+		http.Error(w, "Chat not found", 404)
+		return
+	} else if err != nil {
+		log.Printf("Failed to fetch chat data: %v", err)
+		http.Error(w, "Failed to fetch chat data", 500)
+		return
+	}
+
+	var chat waRedis.Chat
+	if err := json.Unmarshal([]byte(chatJSON), &chat); err != nil {
+		log.Printf("Failed to decode chat data: %v", err)
+		http.Error(w, "Failed to decode chat data", 500)
+		return
+	}
+
+	var contact *waRedis.Contact
+	if chat.Number != "" {
+		contacts, err := waRedis.GetContacts(rdb)
+		if err == nil {
+			for _, c := range contacts {
+				if c.Number == chat.Number {
+					contact = &c
+					break
+				}
+			}
+		}
+	}
+
+	response := map[string]interface{}{
+		"chatId":     chat.ID,
+		"number":     chat.Number,
+		"situation":  chat.Situation,
+		"isActive":   chat.IsActive,
+		"agentId":    chat.AgentID,
+		"instanceId": chat.InstanceID,
+		"tabulation": chat.Tabulation,
+	}
+
+	if contact != nil {
+		response["contact"] = contact
+		response["displayName"] = contact.Name
+	} else {
+		response["displayName"] = chat.ID
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	json.NewEncoder(w).Encode(response)
+}
+
+func GetContactsHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("GetContactsHandler called")
+
+	cfg := config.LoadConfig()
+	rdb, err := waRedis.ConnectRedis(cfg.RedisUrl, cfg.RedisPassword)
+	if err != nil {
+		log.Printf("Redis connection error: %v", err)
+		http.Error(w, "Failed to connect to Redis", 500)
+		return
+	}
+	defer rdb.Close()
+
+	contacts, err := waRedis.GetContacts(rdb)
+	if err != nil {
+		log.Printf("Failed to get contacts: %v", err)
+		http.Error(w, "Failed to get contacts", 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":  true,
+		"contacts": contacts,
+	})
+}
+
+func AddContactHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("AddContactHandler called")
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+
+	var req struct {
+		Name   string `json:"name"`
+		Number string `json:"number"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("JSON decode error: %v", err)
+		http.Error(w, "Invalid request body", 400)
+		return
+	}
+
+	if req.Name == "" || req.Number == "" {
+		http.Error(w, "Missing required fields", 400)
+		return
+	}
+
+	cfg := config.LoadConfig()
+	rdb, err := waRedis.ConnectRedis(cfg.RedisUrl, cfg.RedisPassword)
+	if err != nil {
+		log.Printf("Redis connection error: %v", err)
+		http.Error(w, "Failed to connect to Redis", 500)
+		return
+	}
+	defer rdb.Close()
+
+	contact := waRedis.Contact{
+		ID:        fmt.Sprintf("contact_%d", time.Now().UnixNano()),
+		Name:      req.Name,
+		Number:    req.Number,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	}
+
+	err = waRedis.AddContact(rdb, contact)
+	if err != nil {
+		log.Printf("Failed to add contact: %v", err)
+		http.Error(w, "Failed to add contact", 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Contact added successfully",
+		"contact": contact,
+	})
+}
+
+func DeleteContactHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("DeleteContactHandler called")
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+
+	var req struct {
+		ContactID string `json:"contactId"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("JSON decode error: %v", err)
+		http.Error(w, "Invalid request body", 400)
+		return
+	}
+
+	if req.ContactID == "" {
+		http.Error(w, "Missing contactId", 400)
+		return
+	}
+
+	cfg := config.LoadConfig()
+	rdb, err := waRedis.ConnectRedis(cfg.RedisUrl, cfg.RedisPassword)
+	if err != nil {
+		log.Printf("Redis connection error: %v", err)
+		http.Error(w, "Failed to connect to Redis", 500)
+		return
+	}
+	defer rdb.Close()
+
+	err = waRedis.DeleteContact(rdb, req.ContactID)
+	if err != nil {
+		log.Printf("Failed to delete contact: %v", err)
+		http.Error(w, "Failed to delete contact", 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Contact deleted successfully",
+	})
 }

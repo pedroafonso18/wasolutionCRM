@@ -20,6 +20,7 @@
             <div class="nav-menu">
                 <a href="/chats" class="nav-link active">Chats</a>
                 <a href="/instances" class="nav-link">Instâncias</a>
+                <a href="/contacts" class="nav-link">Contatos</a>
                 <a href="/logout" class="nav-btn">Sair</a>
             </div>
             <div class="hamburger">
@@ -52,9 +53,6 @@
                 <button class="action-btn" id="transferBtn" title="Transferir chat" style="display:none;">
                     <i class="fas fa-exchange-alt"></i>
                 </button>
-                <button class="action-btn" id="startChatBtn" title="Iniciar chat" style="display:none;">
-                    <i class="fas fa-play"></i>
-                </button>
                 <button class="action-btn" id="closeChatBtn" title="Fechar chat" style="display:none;">
                     <i class="fas fa-times-circle"></i>
                 </button>
@@ -63,6 +61,9 @@
                 </button>
                 <button class="action-btn" id="transferCallBtn" title="Transferir chamado" style="display:none;">
                     <i class="fas fa-share"></i>
+                </button>
+                <button class="action-btn" id="chatDetailsBtn" title="Detalhes do chat" style="display:none;">
+                    <i class="fas fa-info-circle"></i>
                 </button>
             </div>
             <div class="chat-messages" id="chatMessages">
@@ -76,6 +77,15 @@
                 <button class="chat-send-btn" type="submit" disabled><i class="fas fa-paper-plane"></i></button>
             </form>
         </main>
+        <aside class="chat-details-sidebar" id="chatDetailsSidebar" style="display:none;">
+            <div class="sidebar-header">
+                <h3>Detalhes do Chat</h3>
+                <button class="modal-close" id="closeDetailsBtn">&times;</button>
+            </div>
+            <div class="chat-details-content" id="chatDetailsContent">
+                <!-- Chat details will be loaded here -->
+            </div>
+        </aside>
     </div>
 
     <!-- Transfer Modal -->

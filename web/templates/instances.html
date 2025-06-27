@@ -20,6 +20,7 @@
             <div class="nav-menu">
                 <a href="/chats" class="nav-link">Chats</a>
                 <a href="/instances" class="nav-link active">Instâncias</a>
+                <a href="/contacts" class="nav-link">Contatos</a>
                 <a href="/logout" class="nav-btn">Sair</a>
             </div>
             <div class="hamburger">
@@ -46,6 +47,9 @@
         <main class="instances-main">
             <div class="instances-header" id="instancesHeader">
                 <span class="instance-title">Selecione uma instância</span>
+                <button class="action-btn" id="startChatBtn" title="Iniciar Chat" style="display:none;">
+                    <i class="fas fa-comments"></i>
+                </button>
             </div>
             <div class="instances-content" id="instancesContent">
                 <div class="empty-state">
@@ -143,6 +147,31 @@
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="cancelWebhook">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Configurar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Chat Modal -->
+    <div id="startChatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Iniciar Chat</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="startChatForm">
+                    <input type="hidden" id="startChatInstanceId" name="instanceId">
+                    <div class="form-group">
+                        <label for="startChatContact">Selecione um contato:</label>
+                        <select id="startChatContact" name="contactId" class="form-control" required>
+                            <option value="">Carregando contatos...</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelStartChat">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Iniciar Chat</button>
                     </div>
                 </form>
             </div>

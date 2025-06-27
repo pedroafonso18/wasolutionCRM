@@ -21,16 +21,18 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg-secondary);
     color: var(--text-primary);
+    margin: 0;
+    padding: 0;
 }
 
-.instances-container {
+.crm-container {
     display: flex;
     height: 100vh;
     margin-top: 70px;
     background: var(--bg-secondary);
 }
 
-.instances-sidebar {
+.contacts-sidebar {
     width: 340px;
     background: #fff;
     border-right: 1px solid var(--border-color);
@@ -53,43 +55,14 @@ body {
     margin-bottom: 1rem;
 }
 
-.sidebar-header p {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-}
-
-.create-instance-btn {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.create-instance-btn:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-}
-
-.instances-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    overflow-y: auto;
+.contacts-list {
     flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
 }
 
-.instances-list li {
+.contact-item {
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -97,13 +70,14 @@ body {
     cursor: pointer;
     border-bottom: 1px solid var(--border-color);
     transition: background 0.2s;
+    position: relative;
 }
 
-.instances-list li:hover, .instances-list li.active {
+.contact-item:hover, .contact-item.active {
     background: var(--bg-secondary);
 }
 
-.instance-avatar {
+.contact-avatar {
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -117,29 +91,55 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
-.instance-info {
+.contact-info {
     flex: 1;
     min-width: 0;
 }
 
-.instance-name {
+.contact-name {
     font-weight: 600;
     color: var(--text-primary);
     font-size: 1rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    margin-bottom: 0.25rem;
 }
 
-.instance-status {
+.contact-number {
     color: var(--text-secondary);
     font-size: 0.9rem;
+    font-family: 'Courier New', monospace;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.instances-main {
+.contact-date {
+    color: var(--text-light);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+.contact-actions {
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.contact-item:hover .contact-actions {
+    opacity: 1;
+}
+
+.contact-actions .btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    min-width: auto;
+}
+
+.contacts-main {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -147,60 +147,35 @@ body {
     position: relative;
 }
 
-.instances-header {
+.contacts-header {
     height: 70px;
     background: #fff;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    gap: 1rem;
     padding: 0 2rem;
-    font-weight: 600;
-    color: var(--primary-dark);
-    font-size: 1.1rem;
     box-shadow: var(--shadow-sm);
 }
 
-.instance-title {
-    flex: 1;
+.contacts-info h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin: 0 0 0.25rem 0;
 }
 
-.action-btn {
-    width: 40px;
-    height: 40px;
-    border: none;
-    background: var(--bg-secondary);
+.contacts-info p {
     color: var(--text-secondary);
-    border-radius: 8px;
-    cursor: pointer;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.contacts-content {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
-    font-size: 1rem;
-    flex-shrink: 0;
-    box-shadow: var(--shadow-sm);
-}
-
-.action-btn:hover {
-    background: var(--primary-color);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
-.action-btn:active {
-    transform: scale(0.95);
-}
-
-.instances-content {
-    flex: 1;
-    padding: 2rem 1.5rem;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    background: #ece5dd;
+    padding: 2rem;
 }
 
 .empty-state {
@@ -208,7 +183,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100%;
+    text-align: center;
     color: var(--text-secondary);
     opacity: 0.7;
     font-size: 1.2rem;
@@ -216,51 +191,128 @@ body {
 }
 
 .empty-state i {
-    font-size: 2.5rem;
+    font-size: 3rem;
     color: var(--primary-color);
-}
-
-.instance-details {
-    background: #fff;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
     margin-bottom: 1rem;
 }
 
-.detail-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.detail-item:last-child {
-    border-bottom: none;
-}
-
-.detail-label {
-    font-weight: 500;
-    color: var(--text-primary);
-}
-
-.detail-value {
-    color: var(--text-secondary);
+.empty-state h3 {
+    font-size: 1.5rem;
     font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
 }
 
-.instance-actions {
+.empty-state p {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 400px;
+    line-height: 1.5;
+}
+
+/* Contact details view */
+.contact-details {
     display: flex;
-    gap: 0.75rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 2rem;
+}
+
+.contact-detail-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: var(--shadow-xl);
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+}
+
+.contact-detail-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin: 0 auto 1.5rem auto;
+    box-shadow: var(--shadow-md);
+}
+
+.contact-detail-info h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.contact-detail-number {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    font-family: 'Courier New', monospace;
+    margin: 0 0 0.5rem 0;
+}
+
+.contact-detail-date {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin: 0 0 2rem 0;
+}
+
+.contact-detail-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
     flex-wrap: wrap;
 }
 
+.contact-detail-actions .btn {
+    min-width: 150px;
+}
+
+/* Notification styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 1001;
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+    box-shadow: var(--shadow-md);
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.success {
+    background: #27ae60;
+}
+
+.notification.error {
+    background: #e74c3c;
+}
+
+.notification.info {
+    background: var(--primary-color);
+}
+
+/* Button styles */
 .btn {
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 8px;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -269,6 +321,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    min-width: 120px;
 }
 
 .btn-primary {
@@ -279,10 +332,7 @@ body {
 .btn-primary:hover {
     background: var(--primary-dark);
     transform: translateY(-1px);
-}
-
-.btn-primary:active {
-    transform: scale(0.95);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
@@ -297,38 +347,25 @@ body {
 }
 
 .btn-success {
-    background: #51cf66;
+    background: #27ae60;
     color: white;
 }
 
 .btn-success:hover {
-    background: #40c057;
+    background: #229954;
     transform: translateY(-1px);
-}
-
-.btn-warning {
-    background: #ffd43b;
-    color: white;
-}
-
-.btn-warning:hover {
-    background: #fcc419;
-    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-danger {
-    background: #ff6b6b;
+    background: #e74c3c;
     color: white;
 }
 
 .btn-danger:hover {
-    background: #fa5252;
+    background: #c0392b;
     transform: translateY(-1px);
-}
-
-.btn-small {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+    box-shadow: var(--shadow-md);
 }
 
 /* Modal Styles */
@@ -375,14 +412,14 @@ body {
     justify-content: space-between;
 }
 
-.modal-header h2 {
+.modal-header h3 {
     margin: 0;
     color: var(--text-primary);
     font-size: 1.2rem;
     font-weight: 600;
 }
 
-.close {
+.modal-close {
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -398,13 +435,21 @@ body {
     transition: all 0.2s ease;
 }
 
-.close:hover {
+.modal-close:hover {
     background: var(--bg-secondary);
     color: var(--text-primary);
 }
 
 .modal-body {
     padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
 }
 
 .form-group {
@@ -418,73 +463,28 @@ body {
     color: var(--text-primary);
 }
 
-.form-group input,
-.form-group select {
+.form-control {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 1rem;
     transition: border-color 0.2s ease;
+    box-sizing: border-box;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+.form-control:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
 }
 
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    margin-top: 2rem;
-}
-
-/* QR Code */
-.qr-container {
-    text-align: center;
-    padding: 2rem;
-}
-
-.qr-container img {
-    max-width: 300px;
-    max-height: 300px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 1rem;
-}
-
-.qr-container p {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-}
-
-/* Loading */
-.loading {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-secondary);
-}
-
-.loading i {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Responsive */
+/* Responsive design */
 @media (max-width: 900px) {
-    .instances-container {
+    .crm-container {
         flex-direction: column;
     }
-    .instances-sidebar {
+    .contacts-sidebar {
         width: 100%;
         min-height: 120px;
         border-right: none;
@@ -493,53 +493,68 @@ body {
         overflow-x: auto;
         overflow-y: hidden;
     }
-    .instances-list {
+    .contacts-list {
         display: flex;
         flex-direction: row;
         gap: 0;
     }
-    .instances-list li {
-        min-width: 120px;
+    .contact-item {
+        min-width: 200px;
         border-bottom: none;
         border-right: 1px solid var(--border-color);
         flex-direction: column;
         align-items: flex-start;
         padding: 1rem 0.5rem;
     }
+    .contact-actions {
+        opacity: 1;
+        margin-top: 0.5rem;
+    }
 }
 
 @media (max-width: 600px) {
-    .instances-container {
+    .crm-container {
         flex-direction: column;
     }
-    .instances-sidebar {
+    .contacts-sidebar {
         width: 100%;
         min-height: 80px;
     }
-    .instances-main {
+    .contacts-main {
         padding: 0;
     }
-    .instances-header {
+    .contacts-header {
         padding: 0 1rem;
         font-size: 1rem;
-        gap: 0.5rem;
     }
-    .action-btn {
+    .contact-item {
+        min-width: 150px;
+        padding: 0.75rem 0.5rem;
+    }
+    .contact-avatar {
         width: 36px;
         height: 36px;
+        font-size: 1.2rem;
+    }
+    .contact-name {
         font-size: 0.9rem;
     }
-    .instances-content {
-        padding: 1rem 0.5rem;
-    }
-    .instance-actions {
-        flex-direction: column;
+    .contact-number {
+        font-size: 0.8rem;
     }
     .modal-content {
         width: 95%;
-        margin: 10% auto;
+        margin: 1rem;
     }
-    .form-actions {
+    .modal-body {
+        padding: 1rem;
+    }
+    .modal-footer {
+        padding: 1rem;
         flex-direction: column;
+    }
+    .btn {
+        width: 100%;
+        justify-content: center;
     }
 } 

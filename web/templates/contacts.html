@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contatos - WaSolCRM</title>
+    <link rel="stylesheet" href="/style/landing.css">
+    <link rel="stylesheet" href="/style/contacts.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fab fa-whatsapp"></i>
+                <span>WaSolCRM</span>
+            </div>
+            <div class="nav-menu">
+                <a href="/chats" class="nav-link">Chats</a>
+                <a href="/instances" class="nav-link">Instâncias</a>
+                <a href="/contacts" class="nav-link active">Contatos</a>
+                <a href="/logout" class="nav-btn">Sair</a>
+            </div>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="crm-container">
+        <aside class="contacts-sidebar">
+            <div class="sidebar-header">
+                <h2>Contatos</h2>
+                <button id="addContactBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Adicionar Contato
+                </button>
+            </div>
+            <div class="contacts-list" id="contactsList">
+                <!-- Contacts will be loaded here -->
+            </div>
+        </aside>
+        <main class="contacts-main">
+            <div class="contacts-header">
+                <div class="contacts-info">
+                    <h3>Gerenciamento de Contatos</h3>
+                    <p>Gerencie seus contatos e inicie conversas</p>
+                </div>
+            </div>
+            <div class="contacts-content">
+                <div class="empty-state">
+                    <i class="fas fa-address-book"></i>
+                    <h3>Selecione um contato</h3>
+                    <p>Escolha um contato da lista para ver detalhes e ações disponíveis</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Contact Modal -->
+    <div id="addContactModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Novo Contato</h3>
+                <button class="modal-close" id="addContactModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addContactForm">
+                    <div class="form-group">
+                        <label for="contactName">Nome:</label>
+                        <input type="text" id="contactName" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactNumber">Número:</label>
+                        <input type="text" id="contactNumber" name="number" class="form-control" placeholder="5511999999999" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="addContactCancel">Cancelar</button>
+                <button class="btn btn-primary" id="addContactConfirm">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Chat Modal -->
+    <div id="startChatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Iniciar Chat</h3>
+                <button class="modal-close" id="startChatModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="startChatForm">
+                    <div class="form-group">
+                        <label for="chatInstance">Instância:</label>
+                        <select id="chatInstance" name="instanceId" class="form-control" required>
+                            <option value="">Selecione uma instância</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="chatContact">Contato:</label>
+                        <select id="chatContact" name="contactId" class="form-control" required>
+                            <option value="">Selecione um contato</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="startChatCancel">Cancelar</button>
+                <button class="btn btn-primary" id="startChatConfirm">Iniciar Chat</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/script/contacts.js"></script>
+</body>
+</html> 

@@ -97,6 +97,10 @@ func Router() {
 		c.HTML(http.StatusOK, "instances.html", nil)
 	})
 
+	r.GET("/contacts", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "contacts.html", nil)
+	})
+
 	r.GET("/api/chats", func(c *gin.Context) {
 		api.GetChatsHandler(c.Writer, c.Request)
 	})
@@ -109,6 +113,12 @@ func Router() {
 		chatID := c.Param("chatID")
 		c.Request.URL.RawQuery = "chatID=" + chatID
 		api.GetMessagesHandler(c.Writer, c.Request)
+	})
+
+	r.GET("/api/chats/:chatID/details", func(c *gin.Context) {
+		chatID := c.Param("chatID")
+		c.Request.URL.RawQuery = "chatID=" + chatID
+		api.GetChatDetailsHandler(c.Writer, c.Request)
 	})
 
 	r.GET("/api/user-info", func(c *gin.Context) {
@@ -175,6 +185,22 @@ func Router() {
 
 	r.POST("/api/instances/webhook", func(c *gin.Context) {
 		api.ConfigWebhookHandler(c.Writer, c.Request)
+	})
+
+	r.GET("/api/contacts", func(c *gin.Context) {
+		api.GetContactsHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/contacts/add", func(c *gin.Context) {
+		api.AddContactHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/contacts/delete", func(c *gin.Context) {
+		api.DeleteContactHandler(c.Writer, c.Request)
+	})
+
+	r.POST("/api/chats/start-with-contact", func(c *gin.Context) {
+		api.StartChatHandler(c.Writer, c.Request)
 	})
 
 	err := r.Run(":8000")

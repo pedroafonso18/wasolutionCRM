@@ -15,6 +15,7 @@ func GetInstances(params WaSolParams) DetailedRequest {
 		Method:  http.MethodGet,
 		Url:     url,
 		Headers: headers,
+		Type:    "sendRequest",
 	}
 }
 
@@ -47,6 +48,7 @@ func CreateInstance(params WaSolParams, inst Instance) DetailedRequest {
 		Url:     url,
 		Headers: headers,
 		Body:    bodyMap,
+		Type:    "sendRequest",
 	}
 }
 
@@ -65,6 +67,7 @@ func ConnectInstance(params WaSolParams, inst_id string) DetailedRequest {
 		Url:     url,
 		Headers: headers,
 		Body:    bodyMap,
+		Type:    "sendRequest",
 	}
 }
 
@@ -88,6 +91,7 @@ func SendMessage(params WaSolParams, msg Message) DetailedRequest {
 		Url:     url,
 		Headers: headers,
 		Body:    bodyMap,
+		Type:    "sendRequest",
 	}
 }
 
@@ -106,6 +110,7 @@ func DeleteInstance(params WaSolParams, instid string) DetailedRequest {
 		Url:     url,
 		Headers: headers,
 		Body:    bodyMap,
+		Type:    "sendRequest",
 	}
 }
 
@@ -124,6 +129,7 @@ func LogoutInstance(params WaSolParams, instid string) DetailedRequest {
 		Url:     url,
 		Headers: headers,
 		Body:    bodyMap,
+		Type:    "sendRequest",
 	}
 }
 
@@ -143,5 +149,6 @@ func ConfigWebhook(params WaSolParams, instid string, webhookUrl string) Detaile
 		Url:     url,
 		Headers: headers,
 		Body:    bodyMap,
+		Type:    "sendRequest",
 	}
 }

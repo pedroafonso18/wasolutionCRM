@@ -45,9 +45,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const createInstanceModal = document.getElementById('createInstanceModal');
     const qrCodeModal = document.getElementById('qrCodeModal');
     const webhookModal = document.getElementById('webhookModal');
+    const startChatModal = document.getElementById('startChatModal');
     const createInstanceBtn = document.getElementById('createInstanceBtn');
     const createInstanceForm = document.getElementById('createInstanceForm');
     const qrCodeImage = document.getElementById('qrCodeImage');
+    const startChatBtn = document.getElementById('startChatBtn');
+    const startChatForm = document.getElementById('startChatForm');
 
     // Debug modal elements
     console.log('Modal elements found:');
@@ -89,8 +92,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Start chat button
+    if (startChatBtn) {
+        startChatBtn.addEventListener('click', () => {
+            openStartChatModal();
+        });
+    }
+
     // Close modals when clicking outside
-    [createInstanceModal, qrCodeModal, webhookModal].forEach(modal => {
+    [createInstanceModal, qrCodeModal, webhookModal, startChatModal].forEach(modal => {
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
@@ -106,12 +116,14 @@ document.addEventListener('DOMContentLoaded', function() {
             createInstanceModal.style.display = 'none';
             qrCodeModal.style.display = 'none';
             webhookModal.style.display = 'none';
+            startChatModal.style.display = 'none';
         });
     });
 
     // Cancel buttons
     const cancelCreate = document.getElementById('cancelCreate');
     const cancelWebhook = document.getElementById('cancelWebhook');
+    const cancelStartChat = document.getElementById('cancelStartChat');
     const closeQrModal = document.getElementById('closeQrModal');
 
     if (cancelCreate) {
@@ -123,6 +135,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (cancelWebhook) {
         cancelWebhook.addEventListener('click', () => {
             webhookModal.style.display = 'none';
+        });
+    }
+
+    if (cancelStartChat) {
+        cancelStartChat.addEventListener('click', () => {
+            startChatModal.style.display = 'none';
+            startChatForm.reset();
         });
     }
 
@@ -300,6 +319,64 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Start chat form
+    if (startChatForm) {
+        startChatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(startChatForm);
+            const data = {
+                instanceId: formData.get('instanceId'),
+                contactId: formData.get('contactId')
+            };
+
+            if (!data.instanceId || !data.contactId) {
+                showNotification('Por favor, selecione um contato', 'error');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = startChatForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...';
+            submitBtn.disabled = true;
+
+            fetch('/api/chats/start-with-contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(response => {
+                console.log('Start chat response:', response);
+                startChatModal.style.display = 'none';
+                startChatForm.reset();
+                
+                if (response.success) {
+                    showNotification('Chat iniciado com sucesso!', 'success');
+                    // Redirect to chats page after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/chats';
+                    }, 1500);
+                } else {
+                    showNotification('Erro ao iniciar chat: ' + (response.message || 'Erro desconhecido'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error starting chat:', error);
+                showNotification('Erro ao iniciar chat', 'error');
+            })
+            .finally(() => {
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+
     function loadInstances() {
         const instancesList = document.getElementById('instancesList');
         if (!instancesList) return;
@@ -421,6 +498,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${!isActive ? `
                 <button class="btn btn-success btn-small" onclick="connectInstance('${selectedInstance.instance_id}')">
                     <i class="fas fa-link"></i> Conectar
+                </button>
+                ` : ''}
+                ${isActive ? `
+                <button class="btn btn-primary btn-small" onclick="startChatWithInstance('${selectedInstance.instance_id}')">
+                    <i class="fas fa-comments"></i> Iniciar Chat
                 </button>
                 ` : ''}
                 <button class="btn btn-warning btn-small" onclick="configWebhook('${selectedInstance.instance_id}')">
@@ -656,6 +738,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 showNotification('Erro ao excluir instância', 'error');
             });
         }
+    };
+
+    // Function to open start chat modal
+    function openStartChatModal() {
+        if (!selectedInstanceId) {
+            showNotification('Por favor, selecione uma instância primeiro', 'error');
+            return;
+        }
+
+        // Set the instance ID in the hidden field
+        document.getElementById('startChatInstanceId').value = selectedInstanceId;
+        
+        // Load contacts for the select dropdown
+        loadContactsForStartChat();
+        
+        // Show the modal
+        startChatModal.style.display = 'flex';
+    }
+
+    // Function to load contacts for start chat
+    function loadContactsForStartChat() {
+        const contactSelect = document.getElementById('startChatContact');
+        if (!contactSelect) return;
+
+        contactSelect.innerHTML = '<option value="">Carregando contatos...</option>';
+
+        fetch('/api/contacts', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.contacts && data.contacts.length > 0) {
+                contactSelect.innerHTML = '<option value="">Selecione um contato</option>';
+                data.contacts.forEach(contact => {
+                    const option = document.createElement('option');
+                    option.value = contact.id;
+                    option.textContent = `${contact.name} (${contact.number})`;
+                    contactSelect.appendChild(option);
+                });
+            } else {
+                contactSelect.innerHTML = '<option value="">Nenhum contato disponível</option>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading contacts:', error);
+            contactSelect.innerHTML = '<option value="">Erro ao carregar contatos</option>';
+        });
+    }
+
+    // Global function to start chat with instance
+    window.startChatWithInstance = function(instanceId) {
+        selectedInstanceId = instanceId;
+        openStartChatModal();
     };
 
     // Auto-refresh instances every 30 seconds

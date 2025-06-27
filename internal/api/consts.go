@@ -70,4 +70,5 @@ type DetailedRequest struct {
 	Headers map[string]string `json:"headers"`
 	Body    map[string]string `json:"body,omitempty"`
 	Params  map[string]string `json:"params,omitempty"`
+	Type    string            `json:"type"`
 }

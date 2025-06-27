@@ -40,6 +40,7 @@ func GetChats(rdb *redis.Client) ([]ChatPreview, error) {
 				Situation: chat.Situation,
 				IsActive:  chat.IsActive,
 				AgentID:   chat.AgentID,
+				Number:    chat.Number,
 			})
 			continue
 		} else if err != nil {
@@ -57,6 +58,7 @@ func GetChats(rdb *redis.Client) ([]ChatPreview, error) {
 			Situation:   chat.Situation,
 			IsActive:    chat.IsActive,
 			AgentID:     chat.AgentID,
+			Number:      chat.Number,
 			LastMessage: msg,
 		})
 	}
@@ -110,6 +112,7 @@ func GetQueuedChats(rdb *redis.Client) ([]ChatPreview, error) {
 					Situation: chat.Situation,
 					IsActive:  chat.IsActive,
 					AgentID:   chat.AgentID,
+					Number:    chat.Number,
 				})
 				continue
 			} else if err != nil {
@@ -126,6 +129,7 @@ func GetQueuedChats(rdb *redis.Client) ([]ChatPreview, error) {
 				Situation:   chat.Situation,
 				IsActive:    chat.IsActive,
 				AgentID:     chat.AgentID,
+				Number:      chat.Number,
 				LastMessage: msg,
 			})
 			fmt.Printf("Added chat %s to queue\n", chatID)
@@ -191,6 +195,7 @@ func GetMyChats(rdb *redis.Client, userID string) ([]ChatPreview, error) {
 					Situation: chat.Situation,
 					IsActive:  chat.IsActive,
 					AgentID:   chat.AgentID,
+					Number:    chat.Number,
 				})
 				continue
 			} else if err != nil {
@@ -208,6 +213,7 @@ func GetMyChats(rdb *redis.Client, userID string) ([]ChatPreview, error) {
 				Situation:   chat.Situation,
 				IsActive:    chat.IsActive,
 				AgentID:     chat.AgentID,
+				Number:      chat.Number,
 				LastMessage: msg,
 			})
 		}
@@ -267,7 +273,7 @@ func TransferChat(rdb *redis.Client, chatID, agentID string) error {
 	return nil
 }
 
-func StartChat(rdb *redis.Client, chatID, agentID string) error {
+func StartChat(rdb *redis.Client, chatID, agentID, instanceID string) error {
 	ctx := context.Background()
 
 	chatKey := fmt.Sprintf("chat:%s", chatID)
@@ -284,6 +290,7 @@ func StartChat(rdb *redis.Client, chatID, agentID string) error {
 	}
 
 	chat.AgentID = &agentID
+	chat.InstanceID = &instanceID
 	chat.Situation = "active"
 	chat.IsActive = true
 
@@ -301,7 +308,7 @@ func StartChat(rdb *redis.Client, chatID, agentID string) error {
 		ID:        fmt.Sprintf("start_%d", time.Now().Unix()),
 		From:      "system",
 		To:        chatID,
-		Text:      fmt.Sprintf("Chat iniciado pelo agente %s", agentID),
+		Text:      fmt.Sprintf("Chat iniciado pelo agente %s usando instância %s", agentID, instanceID),
 		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
@@ -461,6 +468,116 @@ func CloseChat(rdb *redis.Client, chatID, tabulation string) error {
 	err = rdb.RPush(ctx, msgKey, takeMsgJSON).Err()
 	if err != nil {
 		return fmt.Errorf("failed to add finish message: %w", err)
+	}
+
+	return nil
+}
+
+func GetContacts(rdb *redis.Client) ([]Contact, error) {
+	ctx := context.Background()
+
+	contactIDs, err := rdb.SMembers(ctx, "contacts").Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch contact IDs: %w", err)
+	}
+
+	var contacts []Contact
+
+	for _, contactID := range contactIDs {
+		contactKey := fmt.Sprintf("contact:%s", contactID)
+		contactJSON, err := rdb.Get(ctx, contactKey).Result()
+		if err == redis.Nil {
+			continue
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to fetch contact data for %s: %w", contactID, err)
+		}
+
+		var contact Contact
+		if err := json.Unmarshal([]byte(contactJSON), &contact); err != nil {
+			return nil, fmt.Errorf("failed to decode contact data for %s: %w", contactID, err)
+		}
+
+		contacts = append(contacts, contact)
+	}
+
+	return contacts, nil
+}
+
+func AddContact(rdb *redis.Client, contact Contact) error {
+	ctx := context.Background()
+
+	contactJSON, err := json.Marshal(contact)
+	if err != nil {
+		return fmt.Errorf("failed to encode contact data: %w", err)
+	}
+
+	contactKey := fmt.Sprintf("contact:%s", contact.ID)
+	err = rdb.Set(ctx, contactKey, contactJSON, 0).Err()
+	if err != nil {
+		return fmt.Errorf("failed to save contact to Redis: %w", err)
+	}
+
+	err = rdb.SAdd(ctx, "contacts", contact.ID).Err()
+	if err != nil {
+		return fmt.Errorf("failed to add contact to global set: %w", err)
+	}
+
+	return nil
+}
+
+func GetContact(rdb *redis.Client, contactID string) (*Contact, error) {
+	ctx := context.Background()
+
+	contactKey := fmt.Sprintf("contact:%s", contactID)
+	contactJSON, err := rdb.Get(ctx, contactKey).Result()
+	if err == redis.Nil {
+		return nil, fmt.Errorf("contact %s not found", contactID)
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to fetch contact data: %w", err)
+	}
+
+	var contact Contact
+	if err := json.Unmarshal([]byte(contactJSON), &contact); err != nil {
+		return nil, fmt.Errorf("failed to decode contact data: %w", err)
+	}
+
+	return &contact, nil
+}
+
+func DeleteContact(rdb *redis.Client, contactID string) error {
+	ctx := context.Background()
+
+	contactKey := fmt.Sprintf("contact:%s", contactID)
+	err := rdb.Del(ctx, contactKey).Err()
+	if err != nil {
+		return fmt.Errorf("failed to delete contact from Redis: %w", err)
+	}
+
+	err = rdb.SRem(ctx, "contacts", contactID).Err()
+	if err != nil {
+		return fmt.Errorf("failed to remove contact from global set: %w", err)
+	}
+
+	return nil
+}
+
+func AddChat(rdb *redis.Client, chat Chat) error {
+	ctx := context.Background()
+
+	chatJSON, err := json.Marshal(chat)
+	if err != nil {
+		return fmt.Errorf("failed to encode chat data: %w", err)
+	}
+
+	chatKey := fmt.Sprintf("chat:%s", chat.ID)
+	err = rdb.RPush(ctx, chatKey, chatJSON).Err()
+	if err != nil {
+		return fmt.Errorf("failed to save chat to Redis: %w", err)
+	}
+
+	err = rdb.SAdd(ctx, "chats", chat.ID).Err()
+	if err != nil {
+		return fmt.Errorf("failed to add chat to global set: %w", err)
 	}
 
 	return nil
