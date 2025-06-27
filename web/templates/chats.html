@@ -73,9 +73,48 @@
                 </div>
             </div>
             <form class="chat-input-box" id="chatInputBox" style="display:none;" autocomplete="off">
-                <input type="text" class="chat-input" placeholder="Digite uma mensagem ou envie mídia..." disabled />
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" placeholder="Digite uma mensagem ou envie mídia..." disabled />
+                    <div class="chat-input-actions">
+                        <button type="button" class="chat-media-btn" id="imageBtn" title="Enviar imagem" disabled>
+                            <i class="fas fa-image"></i>
+                        </button>
+                        <button type="button" class="chat-media-btn" id="audioBtn" title="Gravar áudio" disabled>
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                    </div>
+                </div>
                 <button class="chat-send-btn" type="submit" disabled><i class="fas fa-paper-plane"></i></button>
+                <input type="file" id="imageInput" accept="image/*" style="display:none;" />
+                <input type="file" id="audioInput" accept="audio/*" style="display:none;" />
             </form>
+            
+            <!-- Audio Recording Interface -->
+            <div class="audio-recording-interface" id="audioRecordingInterface" style="display:none;">
+                <div class="recording-container">
+                    <div class="recording-status">
+                        <span id="recordingStatus">Pronto para gravar</span>
+                        <span id="recordingTime" class="recording-time">00:00</span>
+                    </div>
+                    <div class="recording-controls">
+                        <button type="button" class="recording-btn" id="recordBtn" title="Iniciar gravação">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button type="button" class="recording-btn" id="stopBtn" title="Parar gravação" style="display:none;">
+                            <i class="fas fa-stop"></i>
+                        </button>
+                        <button type="button" class="recording-btn" id="playBtn" title="Reproduzir gravação" style="display:none;">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button type="button" class="recording-btn" id="sendRecordingBtn" title="Enviar áudio" style="display:none;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <button type="button" class="recording-btn cancel-btn" id="cancelRecordingBtn" title="Cancelar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </main>
         <aside class="chat-details-sidebar" id="chatDetailsSidebar" style="display:none;">
             <div class="sidebar-header">

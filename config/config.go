@@ -15,6 +15,8 @@ type Config struct {
 	RabbitMQ      string
 	RedisUrl      string
 	RedisPassword string
+	SSLCert       string
+	SSLKey        string
 }
 
 func LoadConfig() *Config {
@@ -31,5 +33,7 @@ func LoadConfig() *Config {
 		RedisUrl:      os.Getenv("REDIS_URL"),
 		RedisPassword: os.Getenv("REDIS_PASSWORD"),
 		WaSolUrl:      os.Getenv("WASOLUTION_URL"),
+		SSLCert:       os.Getenv("SSL_CERT"),
+		SSLKey:        os.Getenv("SSL_KEY"),
 	}
 }

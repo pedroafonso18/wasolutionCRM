@@ -78,6 +78,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatInputBox = document.getElementById('chatInputBox');
     const chatInput = document.querySelector('.chat-input');
     const chatSendBtn = document.querySelector('.chat-send-btn');
+    const imageBtn = document.getElementById('imageBtn');
+    const audioBtn = document.getElementById('audioBtn');
+    const imageInput = document.getElementById('imageInput');
+    const audioInput = document.getElementById('audioInput');
 
     const takeCallBtn = document.getElementById('takeCallBtn');
     const transferCallBtn = document.getElementById('transferCallBtn');
@@ -85,6 +89,216 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatDetailsSidebar = document.getElementById('chatDetailsSidebar');
     const chatDetailsContent = document.getElementById('chatDetailsContent');
     const closeDetailsBtn = document.getElementById('closeDetailsBtn');
+
+    // Audio recording elements
+    const audioRecordingInterface = document.getElementById('audioRecordingInterface');
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const playBtn = document.getElementById('playBtn');
+    const sendRecordingBtn = document.getElementById('sendRecordingBtn');
+    const cancelRecordingBtn = document.getElementById('cancelRecordingBtn');
+    const recordingStatus = document.getElementById('recordingStatus');
+    const recordingTime = document.getElementById('recordingTime');
+
+    // Audio recording variables
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordedAudio = null;
+    let recordingStartTime = null;
+    let recordingTimer = null;
+    let isRecording = false;
+    let hasMicrophonePermission = false;
+
+    // Check microphone permission on page load
+    async function checkMicrophonePermission() {
+        try {
+            console.log('Checking microphone permission...');
+            const result = await navigator.permissions.query({ name: 'microphone' });
+            hasMicrophonePermission = result.state === 'granted';
+            console.log('Microphone permission state:', result.state);
+            
+            result.addEventListener('change', () => {
+                hasMicrophonePermission = result.state === 'granted';
+                console.log('Microphone permission changed to:', result.state);
+            });
+            
+            return hasMicrophonePermission;
+        } catch (error) {
+            console.log('Permission API not supported, will request on use:', error);
+            return false;
+        }
+    }
+
+    // Request microphone permission
+    async function requestMicrophonePermission() {
+        try {
+            console.log('Requesting microphone permission...');
+            // First, try to get permission without showing error modal
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                } 
+            });
+            
+            console.log('Microphone permission granted!');
+            // Stop the stream immediately after getting permission
+            stream.getTracks().forEach(track => track.stop());
+            hasMicrophonePermission = true;
+            return true;
+        } catch (error) {
+            console.error('Microphone permission error:', error);
+            hasMicrophonePermission = false;
+            
+            let errorMessage = 'Erro ao acessar microfone.';
+            if (error.name === 'NotAllowedError') {
+                errorMessage = 'Permissão de microfone negada. Por favor, permita o acesso ao microfone nas configurações do navegador.';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage = 'Nenhum microfone encontrado. Verifique se o microfone está conectado.';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage = 'Seu navegador não suporta gravação de áudio.';
+            } else if (error.name === 'NotReadableError') {
+                errorMessage = 'Microfone está sendo usado por outro aplicativo. Feche outros aplicativos que possam estar usando o microfone.';
+            } else if (error.name === 'SecurityError') {
+                errorMessage = 'Acesso ao microfone bloqueado por questões de segurança. Use HTTPS ou localhost.';
+            }
+            
+            showPermissionError(errorMessage);
+            return false;
+        }
+    }
+
+    // Show permission error modal
+    function showPermissionError(message) {
+        // Detect browser for specific instructions
+        const userAgent = navigator.userAgent;
+        let browserType = 'generic';
+        
+        if (userAgent.includes('Chrome')) {
+            browserType = 'chrome';
+        } else if (userAgent.includes('Firefox')) {
+            browserType = 'firefox';
+        } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+            browserType = 'safari';
+        }
+        
+        // Create error modal if it doesn't exist
+        let errorModal = document.getElementById('permissionErrorModal');
+        if (!errorModal) {
+            errorModal = document.createElement('div');
+            errorModal.id = 'permissionErrorModal';
+            errorModal.className = 'modal';
+            errorModal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Permissão de Microfone</h3>
+                        <button class="modal-close" onclick="closePermissionError()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="permission-error-content">
+                            <i class="fas fa-microphone-slash"></i>
+                            <p>${message}</p>
+                            <div class="permission-steps">
+                                <h4>Como permitir acesso ao microfone:</h4>
+                                <div class="browser-instructions browser-${browserType}">
+                                    ${getBrowserInstructions(browserType)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closePermissionError()">Fechar</button>
+                        <button class="btn btn-primary" onclick="retryMicrophonePermission()">Tentar Novamente</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(errorModal);
+            
+            // Close modal when clicking outside
+            errorModal.addEventListener('click', (e) => {
+                if (e.target === errorModal) {
+                    closePermissionError();
+                }
+            });
+        } else {
+            // Update existing modal with new message and instructions
+            const content = errorModal.querySelector('.permission-error-content');
+            if (content) {
+                content.innerHTML = `
+                    <i class="fas fa-microphone-slash"></i>
+                    <p>${message}</p>
+                    <div class="permission-steps">
+                        <h4>Como permitir acesso ao microfone:</h4>
+                        <div class="browser-instructions browser-${browserType}">
+                            ${getBrowserInstructions(browserType)}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        errorModal.style.display = 'flex';
+    }
+
+    // Get browser-specific instructions
+    function getBrowserInstructions(browserType) {
+        switch (browserType) {
+            case 'chrome':
+                return `
+                    <ol>
+                        <li>Clique no ícone de cadeado <i class="fas fa-lock"></i> na barra de endereços</li>
+                        <li>Selecione "Permitir" para microfone</li>
+                        <li>Recarregue a página (F5)</li>
+                    </ol>
+                `;
+            case 'firefox':
+                return `
+                    <ol>
+                        <li>Clique no ícone de escudo <i class="fas fa-shield-alt"></i> na barra de endereços</li>
+                        <li>Selecione "Permitir" para microfone</li>
+                        <li>Recarregue a página (F5)</li>
+                    </ol>
+                `;
+            case 'safari':
+                return `
+                    <ol>
+                        <li>Vá em Safari > Preferências > Sites</li>
+                        <li>Selecione "Microfone" na barra lateral</li>
+                        <li>Selecione "Permitir" para este site</li>
+                        <li>Recarregue a página (Cmd+R)</li>
+                    </ol>
+                `;
+            default:
+                return `
+                    <ol>
+                        <li>Clique no ícone de cadeado ou escudo na barra de endereços</li>
+                        <li>Selecione "Permitir" para microfone</li>
+                        <li>Recarregue a página</li>
+                    </ol>
+                `;
+        }
+    }
+
+    // Close permission error modal
+    function closePermissionError() {
+        const errorModal = document.getElementById('permissionErrorModal');
+        if (errorModal) {
+            errorModal.style.display = 'none';
+        }
+    }
+
+    // Retry microphone permission
+    async function retryMicrophonePermission() {
+        closePermissionError();
+        
+        // Try to start recording again
+        try {
+            await startRecording();
+        } catch (error) {
+            console.error('Retry failed:', error);
+        }
+    }
 
     // Debug: Check if buttons are found
     console.log('Button elements found:', {
@@ -847,8 +1061,46 @@ document.addEventListener('DOMContentLoaded', function() {
             const isSent = msg.fromMe || msg.from_me || msg.from === 'me' || msg.from === 'system';
             const isSystem = msg.from === 'system';
             div.className = 'message-bubble ' + (isSent ? 'sent' : 'received') + (isSystem ? ' system-message' : '');
+            
+            // Handle different message types
+            let messageContent = '';
+            const messageType = msg.type || 'text';
+            
+            switch (messageType) {
+                case 'image':
+                    if (msg.body && msg.body.startsWith('data:image')) {
+                        messageContent = `
+                            <div class="message-image">
+                                <img src="${msg.body}" alt="Imagem" onclick="openImageModal('${msg.body}')" />
+                            </div>
+                        `;
+                    } else {
+                        messageContent = `<div>${msg.text || 'Imagem não disponível'}</div>`;
+                    }
+                    break;
+                case 'audio':
+                    if (msg.body && msg.body.startsWith('data:audio')) {
+                        messageContent = `
+                            <div class="message-audio">
+                                <audio controls>
+                                    <source src="${msg.body}" type="audio/mpeg">
+                                    <source src="${msg.body}" type="audio/wav">
+                                    <source src="${msg.body}" type="audio/ogg">
+                                    Seu navegador não suporta o elemento de áudio.
+                                </audio>
+                            </div>
+                        `;
+                    } else {
+                        messageContent = `<div>${msg.text || 'Áudio não disponível'}</div>`;
+                    }
+                    break;
+                default:
+                    messageContent = `<div>${msg.text || msg.body || ''}</div>`;
+                    break;
+            }
+            
             div.innerHTML = `
-                <div>${msg.text || msg.body || ''}</div>
+                ${messageContent}
                 <div class="message-meta">${msg.timestamp ? msg.timestamp : ''}</div>
             `;
             chatMessages.appendChild(div);
@@ -919,45 +1171,237 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Send message
-            fetch('/api/chats/send-message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    chatId: selectedChatId,
-                    message: message,
-                    instanceId: activeInstance.instance_id
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    // Clear input
-                    chatInput.value = '';
-                    
-                    // Reload messages to show the new message
-                    loadMessages(selectedChatId, selectedChatId);
-                    
-                    // Refresh the current tab
-                    if (currentTab === 'all') {
-                        fetchChats();
-                    } else if (currentTab === 'queue') {
-                        fetchQueuedChats();
-                    } else if (currentTab === 'my') {
-                        fetchMyChats();
-                    }
-                } else {
-                    alert('Erro ao enviar mensagem: ' + (data.error || 'Erro desconhecido'));
-                }
-            })
-            .catch(error => {
-                console.error('Error sending message:', error);
-                alert('Erro ao enviar mensagem');
-            });
+            // Send text message
+            sendMessage(message, 'TEXT');
         });
+    }
+
+    // Media button event listeners
+    if (imageBtn) {
+        imageBtn.addEventListener('click', function() {
+            if (!selectedChatId) return;
+            imageInput.click();
+        });
+    }
+
+    if (audioBtn) {
+        audioBtn.addEventListener('click', function() {
+            if (!selectedChatId) return;
+            
+            // Show recording interface immediately
+            showAudioRecordingInterface();
+        });
+    }
+
+    // Audio recording functionality
+    function showAudioRecordingInterface() {
+        if (audioRecordingInterface) {
+            audioRecordingInterface.style.display = 'block';
+            chatInputBox.style.display = 'none';
+            resetRecordingInterface();
+        }
+    }
+
+    function hideAudioRecordingInterface() {
+        if (audioRecordingInterface) {
+            audioRecordingInterface.style.display = 'none';
+            chatInputBox.style.display = 'flex';
+            resetRecordingInterface();
+        }
+    }
+
+    function resetRecordingInterface() {
+        isRecording = false;
+        audioChunks = [];
+        recordedAudio = null;
+        recordingStartTime = null;
+        
+        if (recordingTimer) {
+            clearInterval(recordingTimer);
+            recordingTimer = null;
+        }
+        
+        if (mediaRecorder) {
+            mediaRecorder = null;
+        }
+        
+        // Reset UI
+        if (recordBtn) recordBtn.style.display = 'inline-flex';
+        if (stopBtn) stopBtn.style.display = 'none';
+        if (playBtn) playBtn.style.display = 'none';
+        if (sendRecordingBtn) sendRecordingBtn.style.display = 'none';
+        
+        if (recordBtn) recordBtn.classList.remove('recording');
+        if (recordingStatus) {
+            recordingStatus.textContent = 'Pronto para gravar';
+            recordingStatus.parentElement.classList.remove('recording');
+        }
+        if (recordingTime) recordingTime.textContent = '00:00';
+    }
+
+    // Recording button event listeners
+    if (recordBtn) {
+        recordBtn.addEventListener('click', startRecording);
+    }
+
+    if (stopBtn) {
+        stopBtn.addEventListener('click', stopRecording);
+    }
+
+    if (playBtn) {
+        playBtn.addEventListener('click', playRecording);
+    }
+
+    if (sendRecordingBtn) {
+        sendRecordingBtn.addEventListener('click', sendRecording);
+    }
+
+    if (cancelRecordingBtn) {
+        cancelRecordingBtn.addEventListener('click', hideAudioRecordingInterface);
+    }
+
+    async function startRecording() {
+        try {
+            console.log('Starting recording...');
+            console.log('Current protocol:', window.location.protocol);
+            console.log('Current hostname:', window.location.hostname);
+            
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                console.warn('Microphone access requires HTTPS or localhost');
+                showPermissionError('Microphone access requires HTTPS or localhost. Please use HTTPS or access via localhost.');
+                return;
+            }
+            
+            // Request permission directly when user clicks record
+            console.log('Requesting getUserMedia...');
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                } 
+            });
+            
+            console.log('getUserMedia successful, stream obtained');
+            // Permission granted, update state
+            hasMicrophonePermission = true;
+            
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+            });
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+            
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+                recordedAudio = audioBlob;
+                
+                // Stop all tracks
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Update UI
+                if (recordBtn) recordBtn.style.display = 'none';
+                if (stopBtn) stopBtn.style.display = 'none';
+                if (playBtn) playBtn.style.display = 'inline-flex';
+                if (sendRecordingBtn) sendRecordingBtn.style.display = 'inline-flex';
+                
+                if (recordingStatus) {
+                    recordingStatus.textContent = 'Gravação concluída';
+                    recordingStatus.parentElement.classList.remove('recording');
+                }
+            };
+            
+            mediaRecorder.onerror = (event) => {
+                console.error('MediaRecorder error:', event.error);
+                alert('Erro durante a gravação. Tente novamente.');
+                stopRecording();
+            };
+            
+            mediaRecorder.start();
+            isRecording = true;
+            recordingStartTime = Date.now();
+            
+            // Update UI
+            if (recordBtn) {
+                recordBtn.classList.add('recording');
+                recordBtn.style.display = 'none';
+            }
+            if (stopBtn) stopBtn.style.display = 'inline-flex';
+            
+            if (recordingStatus) {
+                recordingStatus.textContent = 'Gravando...';
+                recordingStatus.parentElement.classList.add('recording');
+            }
+            
+            // Start timer
+            recordingTimer = setInterval(updateRecordingTime, 1000);
+            
+        } catch (error) {
+            console.error('Error starting recording:', error);
+            
+            let errorMessage = 'Erro ao iniciar gravação.';
+            if (error.name === 'NotAllowedError') {
+                errorMessage = 'Permissão de microfone negada. Clique em "Tentar Novamente" para solicitar permissão.';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage = 'Nenhum microfone encontrado. Verifique se o microfone está conectado.';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage = 'Seu navegador não suporta gravação de áudio.';
+            } else if (error.name === 'NotReadableError') {
+                errorMessage = 'Microfone está sendo usado por outro aplicativo. Feche outros aplicativos que possam estar usando o microfone.';
+            } else if (error.name === 'SecurityError') {
+                errorMessage = 'Acesso ao microfone bloqueado por questões de segurança. Use HTTPS ou localhost.';
+            }
+            
+            showPermissionError(errorMessage);
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            
+            if (recordingTimer) {
+                clearInterval(recordingTimer);
+                recordingTimer = null;
+            }
+        }
+    }
+
+    function playRecording() {
+        if (recordedAudio) {
+            const audio = new Audio(URL.createObjectURL(recordedAudio));
+            audio.play();
+        }
+    }
+
+    function sendRecording() {
+        if (!recordedAudio || !selectedChatId) return;
+        
+        // Convert blob to base64
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64Data = e.target.result;
+            sendMessage(base64Data, 'AUDIO');
+            hideAudioRecordingInterface();
+        };
+        reader.readAsDataURL(recordedAudio);
+    }
+
+    function updateRecordingTime() {
+        if (recordingStartTime) {
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (recordingTime) {
+                recordingTime.textContent = timeString;
+            }
+        }
     }
 
     // Enable/disable input based on chat selection
@@ -968,6 +1412,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (chatSendBtn) {
             chatSendBtn.disabled = !enable;
+        }
+        if (imageBtn) {
+            imageBtn.disabled = !enable;
+        }
+        if (audioBtn) {
+            audioBtn.disabled = !enable;
+        }
+        
+        // Hide recording interface when disabling input
+        if (!enable && audioRecordingInterface) {
+            audioRecordingInterface.style.display = 'none';
+            chatInputBox.style.display = 'flex';
         }
     }
 
@@ -1088,4 +1544,169 @@ document.addEventListener('DOMContentLoaded', function() {
         // Fallback to chat ID
         return chat.id;
     }
+
+    // Function to open image modal
+    function openImageModal(imageSrc) {
+        // Create modal if it doesn't exist
+        let imageModal = document.getElementById('imageModal');
+        if (!imageModal) {
+            imageModal = document.createElement('div');
+            imageModal.id = 'imageModal';
+            imageModal.className = 'modal';
+            imageModal.innerHTML = `
+                <div class="modal-content image-modal-content">
+                    <div class="modal-header">
+                        <h3>Visualizar Imagem</h3>
+                        <button class="modal-close" onclick="closeImageModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <img src="" alt="Imagem" id="modalImage" />
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(imageModal);
+            
+            // Close modal when clicking outside
+            imageModal.addEventListener('click', (e) => {
+                if (e.target === imageModal) {
+                    closeImageModal();
+                }
+            });
+        }
+        
+        // Set image source and show modal
+        const modalImage = document.getElementById('modalImage');
+        if (modalImage) {
+            modalImage.src = imageSrc;
+        }
+        imageModal.style.display = 'flex';
+    }
+
+    // Function to close image modal
+    function closeImageModal() {
+        const imageModal = document.getElementById('imageModal');
+        if (imageModal) {
+            imageModal.style.display = 'none';
+        }
+    }
+
+    // Make functions globally available
+    window.openImageModal = openImageModal;
+    window.closeImageModal = closeImageModal;
+    window.closePermissionError = closePermissionError;
+    window.retryMicrophonePermission = retryMicrophonePermission;
+
+    // File input event listeners (for image uploads)
+    if (imageInput) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFileUpload(file, 'IMAGE');
+            }
+        });
+    }
+
+    // Function to handle file uploads (for images)
+    function handleFileUpload(file, type) {
+        // Validate file size (max 10MB for images)
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+            alert(`Arquivo muito grande. Tamanho máximo: 10MB`);
+            return;
+        }
+
+        // Validate file type
+        if (type === 'IMAGE' && !file.type.startsWith('image/')) {
+            alert('Por favor, selecione um arquivo de imagem válido.');
+            return;
+        }
+
+        // Show loading indicator
+        const originalText = imageBtn.innerHTML;
+        imageBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        imageBtn.disabled = true;
+
+        // Convert file to base64
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64Data = e.target.result;
+            
+            // Send the base64 data as the message
+            sendMessage(base64Data, type);
+            
+            // Restore button state
+            imageBtn.innerHTML = originalText;
+            imageBtn.disabled = false;
+        };
+        
+        reader.onerror = function() {
+            alert('Erro ao processar arquivo. Tente novamente.');
+            // Restore button state
+            imageBtn.innerHTML = originalText;
+            imageBtn.disabled = false;
+        };
+        
+        reader.readAsDataURL(file);
+        
+        // Clear the input
+        imageInput.value = '';
+    }
+
+    // Function to send messages with type support
+    function sendMessage(message, type = 'TEXT') {
+        if (!message || !selectedChatId) return;
+
+        // Get the first active instance
+        const activeInstance = instances.find(instance => instance.is_active);
+        if (!activeInstance) {
+            alert('Nenhuma instância ativa encontrada. Por favor, conecte uma instância primeiro.');
+            return;
+        }
+
+        // Send message
+        fetch('/api/chats/send-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                chatId: selectedChatId,
+                message: message,
+                type: type
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Clear input only for text messages
+                if (type === 'TEXT') {
+                    chatInput.value = '';
+                }
+                
+                // Reload messages to show the new message
+                loadMessages(selectedChatId, selectedChatId);
+                
+                // Refresh the current tab
+                if (currentTab === 'all') {
+                    fetchChats();
+                } else if (currentTab === 'queue') {
+                    fetchQueuedChats();
+                } else if (currentTab === 'my') {
+                    fetchMyChats();
+                }
+            } else {
+                alert('Erro ao enviar mensagem: ' + (data.error || 'Erro desconhecido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            alert('Erro ao enviar mensagem');
+        });
+    }
+
+    // Initialize microphone permission check
+    checkMicrophonePermission().then(hasPermission => {
+        console.log('Microphone permission status:', hasPermission ? 'granted' : 'not granted');
+    });
 }); 

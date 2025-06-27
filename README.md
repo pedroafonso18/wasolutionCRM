@@ -144,4 +144,63 @@ Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull r
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. 
+Este projeto está sob a licença MIT.
+
+## Configuração do Microfone
+
+Para usar a funcionalidade de gravação de áudio, o navegador requer HTTPS ou localhost. Aqui estão as opções:
+
+### Opção 1: Usar localhost (Desenvolvimento)
+Acesse a aplicação via `http://localhost:8000` - o microfone funcionará normalmente.
+
+### Opção 2: Usar HTTPS (Produção/Desenvolvimento)
+1. **Com ngrok (Recomendado para desenvolvimento):**
+   ```bash
+   # Instale ngrok
+   npm install -g ngrok
+   
+   # Inicie o servidor WaSolCRM
+   go run cmd/WaSolCRM/main.go
+   
+   # Em outro terminal, crie um túnel HTTPS
+   ngrok http 8000
+   ```
+   
+   Use a URL HTTPS fornecida pelo ngrok (ex: `https://abc123.ngrok.io`)
+
+2. **Com certificados SSL próprios:**
+   ```bash
+   # Adicione ao seu arquivo .env:
+   SSL_CERT=/path/to/your/cert.pem
+   SSL_KEY=/path/to/your/key.pem
+   ```
+
+### Opção 3: Gerar certificados auto-assinados para desenvolvimento
+```bash
+# Gere certificados auto-assinados
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
+
+# Adicione ao .env:
+SSL_CERT=./cert.pem
+SSL_KEY=./key.pem
+```
+
+### Solução de Problemas
+
+1. **Popup de permissão não aparece:**
+   - Verifique se está usando HTTPS ou localhost
+   - Abra o console do navegador (F12) para ver mensagens de erro
+   - Certifique-se de que o microfone não está sendo usado por outro aplicativo
+
+2. **Erro de permissão negada:**
+   - Clique no ícone de cadeado/escudo na barra de endereços
+   - Selecione "Permitir" para microfone
+   - Recarregue a página
+
+3. **Erro de segurança:**
+   - Use HTTPS ou acesse via localhost
+   - Para certificados auto-assinados, aceite o aviso de segurança do navegador
+
+## Instalação e Configuração
+
+// ... existing content ... 

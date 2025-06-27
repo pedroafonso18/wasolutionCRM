@@ -5,6 +5,8 @@ type Message struct {
 	From      string `json:"from"`
 	To        string `json:"to"`
 	Text      string `json:"text"`
+	Body      string `json:"body,omitempty"`
+	Type      string `json:"type,omitempty"`
 	Timestamp string `json:"timestamp"`
 }
 

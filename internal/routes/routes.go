@@ -5,6 +5,7 @@ import (
 	"WaSolCRM/internal/auth"
 	"WaSolCRM/internal/database"
 	api "WaSolCRM/internal/handlers"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,12 @@ import (
 
 func Router() {
 	r := gin.Default()
+
+	r.Use(func(c *gin.Context) {
+		c.Header("Permissions-Policy", "microphone=()")
+		c.Header("Feature-Policy", "microphone 'self'")
+		c.Next()
+	})
 
 	r.LoadHTMLGlob("web/templates/*")
 	r.Static("/style", "./web/style")
@@ -203,8 +210,26 @@ func Router() {
 		api.StartChatHandler(c.Writer, c.Request)
 	})
 
+	// Try to start with HTTPS first, fallback to HTTP
+	cfg := config.LoadConfig()
+
+	// Check if we have SSL certificates
+	if cfg.SSLCert != "" && cfg.SSLKey != "" {
+		log.Println("Starting server with HTTPS on :8443")
+		err := r.RunTLS(":8443", cfg.SSLCert, cfg.SSLKey)
+		if err != nil {
+			log.Printf("HTTPS failed, falling back to HTTP: %v", err)
+		}
+	}
+
+	// Fallback to HTTP
+	log.Println("Starting server with HTTP on :8000")
+	log.Println("Note: Microphone access requires HTTPS. For development, you can:")
+	log.Println("1. Use ngrok: ngrok http 8000")
+	log.Println("2. Or access via localhost and allow insecure permissions in browser")
+
 	err := r.Run(":8000")
 	if err != nil {
-		return
+		log.Fatal("Failed to start server:", err)
 	}
 }

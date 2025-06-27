@@ -450,6 +450,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		ChatID  string `json:"chatId"`
 		Message string `json:"message"`
+		Type    string `json:"type"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -460,6 +461,18 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	if req.ChatID == "" || req.Message == "" {
 		http.Error(w, "Missing chatId or message", 400)
+		return
+	}
+
+	// Set default message type to TEXT if not provided
+	if req.Type == "" {
+		req.Type = "TEXT"
+	}
+
+	// Validate message type
+	validTypes := map[string]bool{"TEXT": true, "IMAGE": true, "AUDIO": true}
+	if !validTypes[req.Type] {
+		http.Error(w, "Invalid message type. Must be TEXT, IMAGE, or AUDIO", 400)
 		return
 	}
 
@@ -529,7 +542,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		InstanceId: *chat.InstanceID,
 		Number:     contactNumber,
 		Body:       req.Message,
-		Type:       "TEXT",
+		Type:       req.Type,
 	}
 
 	detailedRequest := api.SendMessage(wasolParams, message)
@@ -541,11 +554,27 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var displayText string
+	var messageType string
+	switch req.Type {
+	case "IMAGE":
+		displayText = "📷 Imagem enviada"
+		messageType = "image"
+	case "AUDIO":
+		displayText = "🎵 Áudio enviado"
+		messageType = "audio"
+	default:
+		displayText = req.Message
+		messageType = "text"
+	}
+
 	redisMessage := waRedis.Message{
 		ID:        fmt.Sprintf("msg_%d", time.Now().Unix()),
 		From:      "me",
 		To:        req.ChatID,
-		Text:      req.Message,
+		Text:      displayText,
+		Body:      req.Message,
+		Type:      messageType,
 		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
@@ -556,7 +585,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Successfully queued message for chat %s by agent %s using instance %s to number %s", req.ChatID, agentID, *chat.InstanceID, contactNumber)
+	log.Printf("Successfully queued %s message for chat %s by agent %s using instance %s to number %s", req.Type, req.ChatID, agentID, *chat.InstanceID, contactNumber)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
