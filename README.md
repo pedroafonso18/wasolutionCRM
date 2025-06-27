@@ -111,41 +111,6 @@ O sistema utiliza PostgreSQL. A conexão é configurada via variável `DB_URL`. 
 
 ---
 
-## 📦 Estrutura do Projeto
-
-```
-WaSolCRM/
-│
-├── cmd/WaSolCRM/main.go         # Ponto de entrada da aplicação
-├── config/config.go             # Carregamento de variáveis de ambiente
-├── internal/
-│   ├── api/                     # Integração com APIs externas (WhatsApp)
-│   ├── auth/                    # Lógica de autenticação e middleware
-│   ├── database/                # Conexão com banco de dados
-│   └── routes/                  # Definição das rotas HTTP
-├── web/templates/               # Templates HTML para interface web
-├── go.mod / go.sum              # Gerenciamento de dependências
-└── .env                         # Variáveis de ambiente (não versionado)
-```
-
----
-
-## 📚 Inspiração
-
-Este projeto foi inspirado e utiliza conceitos do [wasolution](https://github.com/pedroafonso18/wasolution), especialmente na padronização de integração com APIs de WhatsApp e gerenciamento de instâncias.
-
----
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests.
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT.
-
 ## Configuração do Microfone
 
 Para usar a funcionalidade de gravação de áudio, o navegador requer HTTPS ou localhost. Aqui estão as opções:
@@ -201,6 +166,40 @@ SSL_KEY=./key.pem
    - Use HTTPS ou acesse via localhost
    - Para certificados auto-assinados, aceite o aviso de segurança do navegador
 
-## Instalação e Configuração
+---
 
-// ... existing content ... 
+## 📦 Estrutura do Projeto
+
+```
+WaSolCRM/
+│
+├── cmd/WaSolCRM/main.go         # Ponto de entrada da aplicação
+├── config/config.go             # Carregamento de variáveis de ambiente
+├── internal/
+│   ├── api/                     # Integração com APIs externas (WhatsApp)
+│   ├── auth/                    # Lógica de autenticação e middleware
+│   ├── database/                # Conexão com banco de dados
+│   └── routes/                  # Definição das rotas HTTP
+├── web/templates/               # Templates HTML para interface web
+├── go.mod / go.sum              # Gerenciamento de dependências
+└── .env                         # Variáveis de ambiente (não versionado)
+```
+
+---
+
+## 📚 Inspiração
+
+Este projeto foi inspirado e utiliza conceitos do [wasolution](https://github.com/pedroafonso18/wasolution), especialmente na padronização de integração com APIs de WhatsApp e gerenciamento de instâncias.
+
+---
+
+## 🤝 Contribuindo
+
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests.
+
+---
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT.
+
